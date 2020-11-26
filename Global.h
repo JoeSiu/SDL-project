@@ -147,5 +147,3 @@ struct StateStruct
 {
 	void (*StatePointer)();
 };
-
-//this is a test
