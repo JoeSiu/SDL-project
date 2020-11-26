@@ -1816,6 +1816,7 @@ void Pause()
 		handlePauseEvent();
 
 		//TODO: add button checking and rendering here
+		//create a button class?
 
 		//Update screen
 		SDL_RenderPresent(gRenderer);
