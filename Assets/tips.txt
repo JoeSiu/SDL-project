@@ -1,0 +1,13 @@
+You can swap your weapon either by using the mouse wheel, or press Q / 1 / 2
+Don't stand still! Keep moving around so it's harder for the zombie to get to you
+Kill the fast zombie (green zombie) first as they can be very dangerous due to the speed
+Don't let the zombie group together as a horde of zombie can kill you easily!
+Tank zombies (purple zombie) are hard to kill, but you can usually outrun them as they are slow 
+You don't have to wait until your gun is empty, reload you weapon whatever is possible!
+Avoid the toxic red mists at all cost! The insider you are in the mist, the more damage you will get
+You can't shoot through the trees, and zombie might hide under it, so be careful when standing next to a tree!
+Watch out for the time left on the top right corner of the screen, if it goes down to 0, you will lost!
+If the crosshair turns grey, it means you can't shoot right now
+The zombie numbers will increase overtime as you progress, so be prepared!
+If your window had lost focus, the game will automatically pause for you :)
+There won't be any zombies during the tutorial, so you can familiarize the controls freely
