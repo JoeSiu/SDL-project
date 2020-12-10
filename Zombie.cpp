@@ -72,10 +72,9 @@ void zombie::move(gameObject target)
 
 	dirX = -cos(rotation * M_PI / 180.0);
 	dirY = -sin(rotation * M_PI / 180.0);
-
-	vx = dirX * speed * systemTimer.getDeltaTime();
-	vy = dirY * speed * systemTimer.getDeltaTime();
-
+	vx = dirX * speed * deltaTimer.getDeltaTime();
+	vy = dirY * speed * deltaTimer.getDeltaTime();
+	
 	px += vx;
 	py += vy;
 
@@ -86,7 +85,7 @@ bool zombie::attack(player& target)
 {
 	currentState = zombieState::ATTACK;
 
-	attackTimer += systemTimer.getDeltaTime();
+	attackTimer += deltaTimer.getDeltaTime();
 	if (attackTimer > attackSpeed)
 	{
 		attackTimer = 0;

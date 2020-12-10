@@ -8,8 +8,7 @@ bullet::bullet(SDL_Rect& camera, gameObject source, int targetX, int targetY)
 	py = source.py;
 
 	setRenderPosition(px, py);
-
-	speed = BULLET_SPEED * systemTimer.getDeltaTime();
+	speed = BULLET_SPEED * deltaTimer.getDeltaTime();
 
 	rotation = source.rotation; 
 
@@ -74,7 +73,7 @@ int weapon::getClipSize()
 
 bool weapon::checkRateOfFire()
 {
-	rateOfFireTimer += systemTimer.getDeltaTime();
+	rateOfFireTimer += deltaTimer.getDeltaTime();
 	if (rateOfFireTimer > rateOfFire)
 	{
 		rateOfFireTimer = 0;
@@ -114,7 +113,7 @@ bool weapon::checkReload()
 		} 
 		else
 		{
-			reloadTimer -= systemTimer.getDeltaTime();
+			reloadTimer -= deltaTimer.getDeltaTime();
 			//printf("reload timer = %f\n", reloadTimer);
 		}
 		return true;

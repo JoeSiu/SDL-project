@@ -68,6 +68,8 @@ void LTimer::unpause()
 
 		//Reset the paused ticks
 		mPausedTicks = 0;
+
+		calDeltaTime();
 	}
 }
 

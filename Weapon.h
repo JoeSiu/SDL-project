@@ -3,7 +3,7 @@
 #include "GameObject.h"
 #include "Timer.h"
 
-extern LTimer systemTimer;
+extern LTimer deltaTimer;
 
 class bullet : public gameObject
 {

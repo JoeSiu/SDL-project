@@ -103,9 +103,8 @@ popUpText dialogue(3.0f, 1.0f);
 popUpText dialogueTips(3.0f, 2.0f);
 
 //framerate related
-LTimer systemTimer;
-LTimer fpsTimer; //The frames per second timer
-LTimer capTimer; //The frames per second cap timer
+LTimer systemTimer; //The frames per second timer
+LTimer deltaTimer; //The frames per second cap timer
 int countedFrames = 0; //total frames
 
 //input
@@ -1325,8 +1324,8 @@ void updatePlayer()
 	myPlayer.calRotation(camera, mouseX, mouseY);
 
 	//calulate player position
-	float dirX = myPlayer.vx * myPlayer.speed * capTimer.getDeltaTime();
-	float dirY = myPlayer.vy * myPlayer.speed * capTimer.getDeltaTime();
+	float dirX = myPlayer.vx * myPlayer.speed * deltaTimer.getDeltaTime();
+	float dirY = myPlayer.vy * myPlayer.speed * deltaTimer.getDeltaTime();
 	myPlayer.px += dirX;
 	myPlayer.py += dirY;
 
@@ -1360,7 +1359,7 @@ void updatePlayer()
 		float distance = myPlayer.calDistance(harmZones[i]);
 		if (distance < harmZones[i].size / COLLIDER_TOLERANCE)
 		{
-			myPlayer.health -= ((MAX_HARM_ZONE_DAMAGE * DIFFICULTY) - map(distance, 0, harmZones[i].size / COLLIDER_TOLERANCE, 0, (MAX_HARM_ZONE_DAMAGE * DIFFICULTY))) * capTimer.getDeltaTime();
+			myPlayer.health -= ((MAX_HARM_ZONE_DAMAGE * DIFFICULTY) - map(distance, 0, harmZones[i].size / COLLIDER_TOLERANCE, 0, (MAX_HARM_ZONE_DAMAGE * DIFFICULTY))) * deltaTimer.getDeltaTime();
 			myAudio.playPlayerHurt(myPlayer);
 			break;
 		}
@@ -1498,11 +1497,11 @@ void setZombieAnimation(zombie& source)
 	switch (source.currentState)
 	{
 	case zombieState::WALK:
-		if (source.currentFrame > ZOMBIE_WALK_ANIMATION_FRAMES - 1)
-		{
-			source.currentFrame = 0;
-		}
-		source.currentTotalFrame = ZOMBIE_WALK_ANIMATION_FRAMES;
+			if (source.currentFrame > ZOMBIE_WALK_ANIMATION_FRAMES - 1)
+			{
+				source.currentFrame = 0;
+			}
+			source.currentTotalFrame = ZOMBIE_WALK_ANIMATION_FRAMES;
 		break;
 	case zombieState::ATTACK:
 		if (source.currentFrame > ZOMBIE_ATTACK_ANIMATION_FRAMES - 1)
@@ -1537,13 +1536,12 @@ void updateZombie()
 		{
 			zombies[i].move(myPlayer);
 		}
-
+		printf("zombie[0].current total = %i, current frame = %i\n", zombies[0].currentTotalFrame, zombies[0].currentFrame);
 		//render zombie
 		setZombieAnimation(zombies[i]);
 		zombies[i].render(camera);
 		i++;
-
-	}
+	}//
 }
 
 void renderBloodPool()
@@ -1579,7 +1577,7 @@ void renderCrosshair()
 
 void updateAnimation()
 {
-	animationTimeCounter += capTimer.getDeltaTime();
+	animationTimeCounter += deltaTimer.getDeltaTime();
 
 	if (animationTimeCounter > ANIMATION_INTERVAL)
 	{
@@ -1627,7 +1625,7 @@ void setCamera(SDL_Rect& camera, gameObject target) {
 void frameCap()
 {
 	//Calculate and correct fps
-	float avgFPS = countedFrames / (fpsTimer.getTicks() / 1000.f);
+	float avgFPS = countedFrames / (systemTimer.getTicks() / 1000.f);
 	if (avgFPS > 2000000)
 	{
 		avgFPS = 0;
@@ -1635,7 +1633,7 @@ void frameCap()
 	++countedFrames;
 
 	//If frame finished early
-	int frameTicks = capTimer.getTicks();
+	int frameTicks = deltaTimer.getTicks();
 	if (frameTicks < SCREEN_TICK_PER_FRAME)
 	{
 		//Wait remaining time
@@ -1672,7 +1670,7 @@ void Game()
 		myAudio.playBackgroundMusic();
 
 		//start the timers
-		fpsTimer.tick();
+		systemTimer.tick();
 		systemTimer.tick();
 
 		initedLevel = true;
@@ -1681,7 +1679,7 @@ void Game()
 	//While application is running
 	while (!quit && !paused)
 	{
-		capTimer.tick();
+		deltaTimer.tick();
 		SDL_GetMouseState(&mouseX, &mouseY);
 		SDL_ShowCursor(SDL_DISABLE);
 		myPlayer.previousState = myPlayer.currentState;
@@ -1781,8 +1779,6 @@ void Game()
 
 void Pause()
 {
-	//fpsTimer.tick();
-	systemTimer.pause();
 	//pause all playing audios
 	Mix_PauseMusic();
 	Mix_Pause(-1);
@@ -1809,10 +1805,9 @@ void Pause()
 	int tipsY = SCREEN_HEIGHT /2; 
 	drawText(tipsX, tipsY, regularFontSmall, UIColor, fullTips, 1);
 
-
 	while (paused)
 	{
-		capTimer.tick();
+		deltaTimer.tick();
 		handlePauseEvent();
 
 		//TODO: add button checking and rendering here
@@ -1825,9 +1820,6 @@ void Pause()
 	//resume all paused audios
 	Mix_ResumeMusic();
 	Mix_Resume(-1);
-
-	//resume timer
-	systemTimer.unpause();
 
 	g_StateStack.pop();
 }

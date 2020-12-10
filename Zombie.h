@@ -4,7 +4,7 @@
 #include "Player.h"
 #include "Timer.h"
 
-extern LTimer systemTimer;
+extern LTimer deltaTimer;
 extern player myPlayer;
 
 enum class zombieState
@@ -17,8 +17,8 @@ class zombie : public gameObject
 public:
 	zombieState currentState;
 
-	int vx;
-	int vy;
+	float vx;
+	float vy;
 
 	float health;
 	float speed;
