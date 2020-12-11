@@ -168,3 +168,57 @@ int LTexture::getHeight()
 {
 	return mHeight;
 }
+
+int drawText(int x, int y, TTF_Font* font, SDL_Color color, std::string text, int anchorMode)
+{
+	int textWidth;
+	SDL_Surface* surfaceMessage = TTF_RenderText_Blended(font, text.c_str(), color);
+
+	// render the text surface
+	if (surfaceMessage == NULL)
+	{
+		printf("surfaceMessage could not be created! SDL Error: %s\n", TTF_GetError());
+	}
+	else
+	{
+		SDL_Texture* Message = SDL_CreateTextureFromSurface(gRenderer, surfaceMessage);
+		if (Message == NULL)
+		{
+			printf("Unable to create texture from rendered text! SDL Error: %s\n", SDL_GetError());
+		}
+		else {
+			SDL_Rect Message_rect;
+			Message_rect.w = surfaceMessage->w;
+			Message_rect.h = surfaceMessage->h;
+			textWidth = Message_rect.w;
+
+			//set a ancher point for the x and y
+			switch (anchorMode)
+			{
+			case 0: //top left
+				Message_rect.x = x;
+				Message_rect.y = y;
+				break;
+			case 1: //top mid
+				Message_rect.x = x - (Message_rect.w / 2);
+				Message_rect.y = y;
+				break;
+			case 2: //top right
+				Message_rect.x = x - Message_rect.w;
+				Message_rect.y = y;
+				break;
+			}
+
+			//draw text
+			SDL_RenderCopy(gRenderer, Message, NULL, &Message_rect);
+
+			//free surface and texture
+			SDL_FreeSurface(surfaceMessage);
+			SDL_DestroyTexture(Message);
+
+			//return the width of the text
+			return textWidth;
+		}
+	}
+	return 0;
+}

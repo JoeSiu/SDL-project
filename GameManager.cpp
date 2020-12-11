@@ -6,6 +6,7 @@
 #include "Timer.h"
 #include "Audio.h"
 #include "PopUpText.h"
+#include "Button.h"
 
 //render window
 SDL_Window* gWindow = NULL;
@@ -18,6 +19,14 @@ void Game();
 void Pause();
 void Exit();
 
+//confirm screen
+void Confirm();
+std::string confirmText = "";
+enum class confirmState { RETRY, QUIT, QUIT_TO_MENU };
+confirmState confirmMode;
+void showConfirmScreen(std::string t, confirmState m);
+void hideConfirmScreen();
+
 //void handleMenuEvent();
 //void handleMenuInput();
 void handleGameEvent();
@@ -26,6 +35,7 @@ void handlePauseEvent();
 //void handlePauseInput();
 //void handleExitEvent();
 //void handleExitInput();
+void handleConfirmEvent(int& choice);
 void clearScreen();
 
 //Create game objects
@@ -52,6 +62,8 @@ LTexture gBloodOverlayTexture;
 LTexture gHealthIconTexture;
 LTexture gPistolIconTexture;
 LTexture gRifleIconTexture;
+//backdrop texture used for pause screen
+SDL_Texture* backdrop;
 
 //colors
 SDL_Color whiteColor = { 255, 255, 255 };
@@ -118,6 +130,7 @@ bool allowSpawnZombie = false; //flag for zombie spawning
 bool initedLevel = false;
 bool quit = false;
 bool paused = false;
+bool confirmScreen = false;
 bool win = false;
 bool lose = false; //or use int or enums
 
@@ -134,6 +147,9 @@ std::vector<zombie> zombies;
 std::vector<gameObject> bloodpools;
 std::vector<bullet> bullets;
 
+//buttons
+button myButton;
+std::vector<button> buttons;
 
 bool init()
 {
@@ -162,7 +178,7 @@ bool init()
 		}
 
 		//Create window
-		gWindow = SDL_CreateWindow("SM2603 Project", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_RESIZABLE);
+		gWindow = SDL_CreateWindow("SM2603 Project", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN); //SDL_WINDOW_RESIZABLE
 		if (gWindow == NULL)
 		{
 			printf("Window could not be created! SDL Error: %s\n", SDL_GetError());
@@ -201,6 +217,9 @@ bool init()
 			}
 		}
 	}
+
+	//set base scaling
+	SDL_RenderSetLogicalSize(gRenderer, SCREEN_WIDTH, SCREEN_HEIGHT);
 
 	//add exit
 	StateStruct state;
@@ -555,6 +574,9 @@ void close()
 	gRifleIconTexture.free();
 	gCrosshairTexture.free();
 
+	//free backdrop
+	SDL_DestroyTexture(backdrop);
+
 	//Destroy window
 	SDL_DestroyRenderer(gRenderer);
 	SDL_DestroyWindow(gWindow);
@@ -577,6 +599,8 @@ void close()
 	Mix_Quit();
 	IMG_Quit();
 	SDL_Quit();
+	std::stack<StateStruct> emptyStack;
+	g_StateStack.swap(emptyStack);
 }
 
 void createGameObjectRandom(gameObject source, std::vector<gameObject>& vectorList, int total, int minSize, int maxSize, int rotation = 360, int maxType = -1)
@@ -729,60 +753,6 @@ void updateObjective()
 	{
 		objectiveText = "waiting for objective";
 	}
-}
-
-int drawText(int x, int y, TTF_Font* font, SDL_Color color, std::string text, int anchorMode)
-{
-	int textWidth;
-	SDL_Surface* surfaceMessage = TTF_RenderText_Blended(font, text.c_str(), color);
-
-	// render the text surface
-	if (surfaceMessage == NULL)
-	{
-		printf("surfaceMessage could not be created! SDL Error: %s\n", TTF_GetError());
-	}
-	else
-	{
-		SDL_Texture* Message = SDL_CreateTextureFromSurface(gRenderer, surfaceMessage);
-		if (Message == NULL)
-		{
-			printf("Unable to create texture from rendered text! SDL Error: %s\n", SDL_GetError());
-		}
-		else {
-			SDL_Rect Message_rect;
-			Message_rect.w = surfaceMessage->w;
-			Message_rect.h = surfaceMessage->h;
-			textWidth = Message_rect.w;
-
-			//set a ancher point for the x and y
-			switch (anchorMode)
-			{
-			case 0: //top left
-				Message_rect.x = x;
-				Message_rect.y = y;
-				break;
-			case 1: //top mid
-				Message_rect.x = x - (Message_rect.w / 2);
-				Message_rect.y = y;
-				break;
-			case 2: //top right
-				Message_rect.x = x - Message_rect.w;
-				Message_rect.y = y;
-				break;
-			}
-
-			//draw text
-			SDL_RenderCopy(gRenderer, Message, NULL, &Message_rect);
-
-			//free surface and texture
-			SDL_FreeSurface(surfaceMessage);
-			SDL_DestroyTexture(Message);
-
-			//return the width of the text
-			return textWidth;
-		}
-	}
-	return 0;
 }
 
 void drawObjective()
@@ -996,7 +966,7 @@ void handleGameEvent()
 		switch (event.type)
 		{
 		case SDL_QUIT: //User hit the X
-			quit = true;
+			showConfirmScreen("Are you sure you want to quit?", confirmState::QUIT);
 			break;
 		case SDL_WINDOWEVENT:
 			//if window is resized
@@ -1004,8 +974,8 @@ void handleGameEvent()
 			{
 				//resize window
 				SDL_SetWindowSize(gWindow, event.window.data1, event.window.data2);
-				SCREEN_WIDTH = event.window.data1;
-				SCREEN_HEIGHT = event.window.data2;
+				//SCREEN_WIDTH = event.window.data1;
+				//SCREEN_HEIGHT = event.window.data2;
 			}
 			//if window have lost focus
 			if (event.window.windowID == windowID)
@@ -1203,36 +1173,6 @@ void handleGameInput()
 	}
 }
 
-void handlePauseEvent()
-{
-	//Poll events
-	while (SDL_PollEvent(&event))
-	{
-		switch (event.type)
-		{
-		case SDL_QUIT: //User hit the X
-			quit = true;
-			paused = false;
-			break;
-		case SDL_WINDOWEVENT:
-			if (event.window.event == SDL_WINDOWEVENT_RESIZED)
-			{
-				//resize window
-				SDL_SetWindowSize(gWindow, event.window.data1, event.window.data2);
-				SCREEN_WIDTH = event.window.data1;
-				SCREEN_HEIGHT = event.window.data2;
-			}
-			break;
-		case SDL_KEYDOWN:
-			if (event.key.keysym.sym == SDLK_ESCAPE) //esc
-			{
-				paused = false;
-			}
-			break;
-		}
-	}
-}
-
 void setPlayerAnimation()
 {
 	if (myPlayer.myWeapon[myPlayer.currentWeapon].checkReload())
@@ -1311,7 +1251,7 @@ void setPlayerAnimation()
 
 void setDifficulty()
 {
-	DIFFICULTY = 1 + totalZombieKilled/ DIFFICULTY_REQUIREMENT;
+	DIFFICULTY = 1 + totalZombieKilled / DIFFICULTY_REQUIREMENT;
 	MAX_ZOMBIE_NUM = DIFFICULTY * ZOMBIE_NUMBER_STEP;
 }
 
@@ -1497,11 +1437,11 @@ void setZombieAnimation(zombie& source)
 	switch (source.currentState)
 	{
 	case zombieState::WALK:
-			if (source.currentFrame > ZOMBIE_WALK_ANIMATION_FRAMES - 1)
-			{
-				source.currentFrame = 0;
-			}
-			source.currentTotalFrame = ZOMBIE_WALK_ANIMATION_FRAMES;
+		if (source.currentFrame > ZOMBIE_WALK_ANIMATION_FRAMES - 1)
+		{
+			source.currentFrame = 0;
+		}
+		source.currentTotalFrame = ZOMBIE_WALK_ANIMATION_FRAMES;
 		break;
 	case zombieState::ATTACK:
 		if (source.currentFrame > ZOMBIE_ATTACK_ANIMATION_FRAMES - 1)
@@ -1536,7 +1476,6 @@ void updateZombie()
 		{
 			zombies[i].move(myPlayer);
 		}
-		printf("zombie[0].current total = %i, current frame = %i\n", zombies[0].currentTotalFrame, zombies[0].currentFrame);
 		//render zombie
 		setZombieAnimation(zombies[i]);
 		zombies[i].render(camera);
@@ -1677,7 +1616,7 @@ void Game()
 	}
 
 	//While application is running
-	while (!quit && !paused)
+	while (!quit && !paused &&!confirmScreen)
 	{
 		deltaTimer.tick();
 		SDL_GetMouseState(&mouseX, &mouseY);
@@ -1696,7 +1635,7 @@ void Game()
 		handleGameInput();
 
 		//Clear screen
-		SDL_SetRenderDrawColor(gRenderer, 100, 100, 100, 0);
+		SDL_SetRenderDrawColor(gRenderer, 0, 0, 0, 0);
 		SDL_RenderClear(gRenderer);
 
 		//Render ground
@@ -1750,7 +1689,7 @@ void Game()
 
 		//Render crosshair
 		renderCrosshair();
-		
+
 		//Update screen
 		SDL_RenderPresent(gRenderer);
 
@@ -1761,11 +1700,22 @@ void Game()
 		frameCap();
 	}
 
+	//get backdrop
+	SDL_Surface* screencap = SDL_CreateRGBSurface(0, SCREEN_WIDTH, SCREEN_HEIGHT, 32, 0x00ff0000, 0x0000ff00, 0x000000ff, 0xff000000);
+	SDL_RenderReadPixels(gRenderer, NULL, SDL_PIXELFORMAT_ARGB8888, screencap->pixels, screencap->pitch);
+	backdrop = SDL_CreateTextureFromSurface(gRenderer, screencap);
+	SDL_FreeSurface(screencap);
+
+	StateStruct temp;
 	//handle menus
 	if (paused)
 	{
-		StateStruct temp;
 		temp.StatePointer = Pause;
+		g_StateStack.push(temp);
+	}
+	if (confirmScreen)
+	{
+		temp.StatePointer = Confirm;
 		g_StateStack.push(temp);
 	}
 	if (quit)
@@ -1773,6 +1723,56 @@ void Game()
 		while (!g_StateStack.empty())
 		{
 			g_StateStack.pop();
+		}
+	}
+}
+
+void handlePauseEvent()
+{
+	//Poll events
+	while (SDL_PollEvent(&event))
+	{
+		//check events
+		switch (event.type)
+		{
+		case SDL_QUIT: //User hit the X		
+			paused = false;
+			showConfirmScreen("Are you sure you want to quit?", confirmState::QUIT);
+			break;
+		case SDL_WINDOWEVENT:
+			if (event.window.event == SDL_WINDOWEVENT_RESIZED)
+			{
+				//resize window
+				SDL_SetWindowSize(gWindow, event.window.data1, event.window.data2);
+				//SCREEN_WIDTH = event.window.data1;
+				//SCREEN_HEIGHT = event.window.data2;
+			}
+			break;
+		case SDL_KEYDOWN:
+			if (event.key.keysym.sym == SDLK_ESCAPE) //esc
+			{
+				paused = false;
+			}
+			break;
+		case SDL_MOUSEBUTTONUP:
+			//resume button
+			if (buttons[0].checkInside(mouseX, mouseY))
+			{
+				paused = false;
+			}
+			//retry button
+			if (buttons[1].checkInside(mouseX, mouseY))
+			{
+				paused = false;
+				showConfirmScreen("Are you sure you want to retry the level?", confirmState::RETRY);
+			}
+			//quit to menu button
+			if (buttons[2].checkInside(mouseX, mouseY))
+			{
+				paused = false;
+				showConfirmScreen("Are you sure you want to quit to menu?", confirmState::QUIT_TO_MENU);
+			}
+			break;
 		}
 	}
 }
@@ -1787,30 +1787,61 @@ void Pause()
 	SDL_ShowCursor(SDL_ENABLE);
 	//SDL_WarpMouseInWindow(gWindow, SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2); //set the cursor to center of the window
 
-	//Render black overlay 
-	gWhiteTexture.setColor(0, 0, 0, 175);
-	gWhiteTexture.render(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
-
-	//draw paused text
-	int pausedOffset = SCREEN_HEIGHT / 17.5;
+	//set text positions
+	int pausedOffset = SCREEN_HEIGHT / 4;
 	int pausedX = SCREEN_WIDTH / 2;
 	int pausedY = SCREEN_HEIGHT / 2 - pausedOffset;
-	drawText(pausedX, pausedY - 100, boldFontTitle, UIColor, "Paused", 1);
+	int tipsX = SCREEN_WIDTH / 2;
+	int tipsY = pausedY + SCREEN_HEIGHT / 5;
 
-	//Render tips
+	//add buttons
+	//resume button
+	int button1py = tipsY + 75;
+	myButton.init(SCREEN_WIDTH / 2, button1py, 50, "Resume", regularFont);
+	buttons.push_back(myButton);
+	//retry button
+	int button2py = button1py + 75;
+	myButton.init(SCREEN_WIDTH / 2, button2py, 50, "Retry", regularFont);
+	buttons.push_back(myButton);
+	//quit to menu button
+	int button3py = button2py + 75;
+	myButton.init(SCREEN_WIDTH / 2, button3py, 50, "Quit to menu", regularFont);
+	buttons.push_back(myButton);
+
+	//set tips
 	std::string fullTips;
 	dialogueTips.currentLine = GetRandomInt(0, tipsLine.size() - 2, 1);
 	fullTips = "Tips: " + tipsLine[dialogueTips.currentLine];
-	int tipsX = SCREEN_WIDTH / 2;
-	int tipsY = SCREEN_HEIGHT /2; 
-	drawText(tipsX, tipsY, regularFontSmall, UIColor, fullTips, 1);
 
 	while (paused)
 	{
 		deltaTimer.tick();
+		mouses = SDL_GetMouseState(&mouseX, &mouseY);
 		handlePauseEvent();
 
-		//TODO: add button checking and rendering here
+		//Clear screen
+		SDL_SetRenderDrawColor(gRenderer, 0, 0, 0, 0);
+		SDL_RenderClear(gRenderer);
+
+		//Render backdrop
+		SDL_RenderCopy(gRenderer, backdrop, NULL, NULL);
+
+		//Render black overlay 
+		gWhiteTexture.setColor(0, 0, 0, 175);
+		gWhiteTexture.render(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+
+		//Render paused text
+		drawText(pausedX, pausedY, boldFontTitle, UIColor, "Paused", 1);
+
+		//Render tips
+		drawText(tipsX, tipsY, regularFontSmall, UIColor, fullTips, 1);
+
+		//Render buttons
+		for (int i = 0; i < buttons.size(); i++)
+		{
+			buttons[i].checkButton(mouses, mouseX, mouseY);
+			buttons[i].render(gRenderer);
+		}
 
 		//Update screen
 		SDL_RenderPresent(gRenderer);
@@ -1821,12 +1852,180 @@ void Pause()
 	Mix_ResumeMusic();
 	Mix_Resume(-1);
 
-	g_StateStack.pop();
+	//remove all buttons
+	buttons.clear();
+
+	clearScreen();
+
+	if (confirmScreen)
+	{
+		StateStruct temp;
+		temp.StatePointer = Confirm;
+		g_StateStack.push(temp);
+	}
+	else
+	{
+		g_StateStack.pop();
+	}
 }
 
 void Exit()
 {
+	close();
+}
 
+void showConfirmScreen(std::string t, confirmState m)
+{
+	confirmScreen = true;
+	confirmText = t;
+	confirmMode = m;
+}
+
+void hideConfirmScreen()
+{
+	confirmScreen = false;
+	confirmText = "";
+	paused = true;
+}
+
+void handleConfirmEvent(int& choice)
+{
+	//Poll events
+	while (SDL_PollEvent(&event))
+	{
+		//check events
+		switch (event.type)
+		{
+		case SDL_QUIT: //User hit the X
+			choice = 0;
+			confirmMode = confirmState::QUIT;
+			break;
+		case SDL_WINDOWEVENT:
+			if (event.window.event == SDL_WINDOWEVENT_RESIZED)
+			{
+				//resize window
+				SDL_SetWindowSize(gWindow, event.window.data1, event.window.data2);
+				//SCREEN_WIDTH = event.window.data1;
+				//SCREEN_HEIGHT = event.window.data2;
+			}
+			break;
+		case SDL_KEYDOWN:
+			if (event.key.keysym.sym == SDLK_ESCAPE) //esc
+			{
+				choice = 1;
+			}
+			break;
+		case SDL_MOUSEBUTTONUP:
+			//yes button
+			if (buttons[0].checkInside(mouseX, mouseY))
+			{
+				choice = 0;
+			}
+			//no button
+			if (buttons[1].checkInside(mouseX, mouseY))
+			{
+				choice = 1;
+			}
+			break;
+		}
+	}
+}
+
+void Confirm()
+{
+	//pause all playing audios
+	Mix_PauseMusic();
+	Mix_Pause(-1);
+
+	//show back the cursor
+	SDL_ShowCursor(SDL_ENABLE);
+	//SDL_WarpMouseInWindow(gWindow, SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2); //set the cursor to center of the window
+
+	//set text positions
+	int textOffset = SCREEN_HEIGHT / 10;
+	int textX = SCREEN_WIDTH / 2;
+	int textY = SCREEN_HEIGHT / 2 - textOffset;
+
+	//add buttons
+	//yes button
+	int button1py = textY + 75;
+	myButton.init(SCREEN_WIDTH / 2, button1py, 50, "Yes", regularFont);
+	buttons.push_back(myButton);
+	//no button
+	int button2py = button1py + 75;
+	myButton.init(SCREEN_WIDTH / 2, button2py, 50, "No", regularFont);
+	buttons.push_back(myButton);
+
+	int choice = -1; //0 for yes, 1 for no
+
+	while (choice == -1)
+	{
+		deltaTimer.tick();
+		mouses = SDL_GetMouseState(&mouseX, &mouseY);
+		handleConfirmEvent(choice);
+
+		//Clear screen
+		SDL_SetRenderDrawColor(gRenderer, 0, 0, 0, 0);
+		SDL_RenderClear(gRenderer);
+
+		//Render backdrop
+		SDL_RenderCopy(gRenderer, backdrop, NULL, NULL);
+
+		//Render black overlay 
+		gWhiteTexture.setColor(0, 0, 0, 175);
+		gWhiteTexture.render(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+
+		//Render text
+		drawText(textX, textY, boldFontLarge, UIColor, confirmText, 1);
+
+		//Render buttons
+		for (int i = 0; i < buttons.size(); i++)
+		{
+			buttons[i].checkButton(mouses, mouseX, mouseY);
+			buttons[i].render(gRenderer);
+		}
+
+		//Update screen
+		SDL_RenderPresent(gRenderer);
+
+		frameCap();
+	}
+
+	//resume all paused audios
+	Mix_ResumeMusic();
+	Mix_Resume(-1);
+
+	//remove all buttons
+	buttons.clear();
+
+	clearScreen();
+
+	switch (choice)
+	{
+	case 0:
+		if (confirmMode == confirmState::RETRY) //retry
+		{
+			hideConfirmScreen();
+
+			//TODO: add init level and reset objective, dialogue
+			g_StateStack.pop();
+		}
+		if (confirmMode == confirmState::QUIT) //quit
+		{
+			StateStruct temp;
+			temp.StatePointer = Exit;
+			g_StateStack.push(temp);
+		}
+		if (confirmMode == confirmState::QUIT_TO_MENU) //quit to menu
+		{
+
+		}		
+		break;
+	case 1:
+		hideConfirmScreen();
+		g_StateStack.pop();
+		break;
+	}
 }
 
 int main(int argc, char* argv[])
@@ -1854,8 +2053,6 @@ int main(int argc, char* argv[])
 			}
 		}
 
-		//Free resources and close SDL
-		close();
 		return 0;
 	}
 }

@@ -48,7 +48,7 @@ const int LEVEL_HEIGHT = GROUND_TILE_SIZE * LEVEL_SIZE;
 
 //texture related
 const int TREES_CLIP = 14;
-const int CROSSHAIR_SIZE = SCREEN_HEIGHT / 25;
+const int CROSSHAIR_SIZE = SCREEN_HEIGHT / 35;
 
 //level elements' properties
 static int DIFFICULTY = 1; //difficulty will increase the maximum zombie numbers when spawning

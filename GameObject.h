@@ -2,16 +2,17 @@
 #include "Global.h"
 #include "Graphics.h"
 
-class gameObject {
+class gameObject 
+{
 public:
 	int size;
 	double rotation;
 
-	//game object position
+	//game object's center position
 	float px;
 	float py;
 
-	//game object render offset
+	//game object render offset (top left corner)
 	int rx;
 	int ry;
 

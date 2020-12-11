@@ -44,3 +44,5 @@ private:
 	int mWidth;
 	int mHeight;
 };
+
+int drawText(int x, int y, TTF_Font* font, SDL_Color color, std::string text, int anchorMode);
