@@ -11,3 +11,4 @@ If the crosshair turns grey, it means you can't shoot right now
 The zombie numbers will increase overtime as you progress, so be prepared!
 If your window had lost focus, the game will automatically pause for you :)
 There won't be any zombies during the tutorial, so you can familiarize the controls freely
+You die, you lose

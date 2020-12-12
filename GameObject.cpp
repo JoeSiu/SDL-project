@@ -54,3 +54,25 @@ void gameObject::render(LTexture target, SDL_Rect& camera)
 {
 	target.render(rx - camera.x, ry - camera.y, size, size, NULL, rotation);
 }
+
+void renderGameObject(SDL_Rect camera, LTexture& sourceTexture, std::vector<gameObject>& vectorList)
+{
+	if (vectorList.size() > 0)
+	{
+		for (int i = 0; i < vectorList.size(); i++)
+		{
+			sourceTexture.render(camera, vectorList[i].rx, vectorList[i].ry, vectorList[i].size, vectorList[i].size, NULL, vectorList[i].rotation);
+		}
+	}
+}
+
+void renderGameObject(SDL_Rect camera, LTexture& sourceTexture, std::vector<gameObject>& vectorList, std::vector<SDL_Rect> clips)
+{
+	if (vectorList.size() > 0 && clips.size() > 0)
+	{
+		for (int i = 0; i < vectorList.size(); i++)
+		{
+			sourceTexture.render(camera, vectorList[i].rx, vectorList[i].ry, vectorList[i].size, vectorList[i].size, &clips[vectorList[i].type], vectorList[i].rotation);
+		}
+	}
+}

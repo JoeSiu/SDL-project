@@ -17,10 +17,10 @@ Watch out and don't let them get close to you!
 Well we don't have much time left now.
 Your mission is to recover the 4 missing signals.
 They should be around the 4 corners of this area.
-You only have 5 minutes though. 
-So good luck!
+And they are marked with a blue zone also.
+Good luck!
 //end part//
 Great! Seems you have recovered all missing signals.
 We are coming to rescue you.
-Don't die!
+Hold on and don't die!
 //end part//

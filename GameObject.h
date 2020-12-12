@@ -29,3 +29,6 @@ public:
 	void render(LTexture target);
 	void render(LTexture target, SDL_Rect& camera);
 };
+
+void renderGameObject(SDL_Rect camera, LTexture& sourceTexture, std::vector<gameObject>& vectorList);
+void renderGameObject(SDL_Rect camera, LTexture& sourceTexture, std::vector<gameObject>& vectorList, std::vector<SDL_Rect> clips);

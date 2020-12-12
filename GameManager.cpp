@@ -40,9 +40,10 @@ void clearScreen();
 
 //Create game objects
 player myPlayer;
+zombie myZombie;
 gameObject myTree;
 gameObject myHarmZone;
-zombie myZombie;
+gameObject myObjectiveZone;
 
 //textures
 //static textures
@@ -107,6 +108,10 @@ bool tutorial = true;
 int currentObjective = -1;
 bool objective[TOTAL_OBJECTIVE];
 std::string objectiveText;
+int timeLeft = TIME_LIMIT;
+//objective goals
+int obj_zombieKilled = 0;
+bool obj_keyPressed[4] = { false, false, false, false }; //whether w, a, s, d have been pressed
 
 //Dialogue related
 std::vector <std::string> dialogueLine; //dialogue texts
@@ -131,8 +136,8 @@ bool initedLevel = false;
 bool quit = false;
 bool paused = false;
 bool confirmScreen = false;
-bool win = false;
-bool lose = false; //or use int or enums
+enum class endState {FALSE, WIN, LOSE, TIME_OVER};
+endState end = endState::FALSE;
 
 //Event handler
 SDL_Event event;
@@ -146,6 +151,7 @@ std::vector<gameObject> harmZones;
 std::vector<zombie> zombies;
 std::vector<gameObject> bloodpools;
 std::vector<bullet> bullets;
+std::vector<gameObject> objectiveZones;
 
 //buttons
 button myButton;
@@ -639,6 +645,58 @@ void createGameObjectRandom(gameObject source, std::vector<gameObject>& vectorLi
 
 void initLevel()
 {
+	end = endState::FALSE;
+	allowSpawnZombie = false;
+
+	//clear level objects
+	trees.clear();
+	harmZones.clear();
+	zombies.clear();
+	bloodpools.clear();
+	bullets.clear();
+	objectiveZones.clear();
+
+	//set timer
+	timeLeft = TIME_LIMIT;
+
+
+	//if tutorial have been finished
+	if (currentObjective>=2)
+	{
+		//reset objectives
+		currentObjective = 2;
+		objective[0] = true;
+		objective[1] = true;
+		objective[2] = true;
+		tutorial = false;
+		for (int i = 3; i < TOTAL_OBJECTIVE; i++)
+		{
+			objective[i] = false;
+		}
+		obj_zombieKilled = 0;
+
+		//reset dialogues
+		dialogue.currentLine = 12;
+		dialogue.currentPart = 3;
+	}
+	else
+	{
+		//reset objectives
+		currentObjective = -1;
+		for (int i = 0; i < TOTAL_OBJECTIVE; i++)
+		{
+			objective[i] = false;
+		}
+		for (int i = 0; i < 3; i++)
+		{
+			obj_keyPressed[i] = false;
+		}
+		tutorial = true;
+		//reset dialogues
+		dialogue.currentLine = 0;
+		dialogue.currentPart = 0;
+	}
+
 	//init player
 	myPlayer.initPlayer();
 
@@ -652,14 +710,18 @@ void initLevel()
 	//create harmzone
 	createGameObjectRandom(myHarmZone, harmZones, MAX_HARM_ZONE_NUM * DIFFICULTY, MIN_HARM_ZONE_SIZE, MAX_HARM_ZONE_SIZE);
 
-	//init objective
-	for (int i = 0; i < TOTAL_OBJECTIVE; i++)
-	{
-		objective[i] = false;
-	}
+	//create objective zones for objective 5 (reach 4 corners)
+	myObjectiveZone.init(500, 500, 500, 0);
+	objectiveZones.push_back(myObjectiveZone);
+	myObjectiveZone.init(500, LEVEL_HEIGHT - 500, 500, 0);
+	objectiveZones.push_back(myObjectiveZone);
+	myObjectiveZone.init(LEVEL_WIDTH - 500, 500, 500, 0);
+	objectiveZones.push_back(myObjectiveZone);
+	myObjectiveZone.init(LEVEL_WIDTH - 500, LEVEL_HEIGHT - 500, 500, 0);
+	objectiveZones.push_back(myObjectiveZone);
 }
 
-void checkObjective0()
+void checkPreObjective()
 {
 	if (dialogue.currentPart == 1)
 	{
@@ -667,20 +729,20 @@ void checkObjective0()
 	}
 }
 
-void checkObjective1(int key)
+void checkObjective0(int key)
 {
 	if (currentObjective == 0)
 	{
-		static bool keyPressed[4] = { false, false, false, false }; //whether w, a, s, d have been pressed
-		keyPressed[key] = true;
-		if (keyPressed[0] && keyPressed[1] && keyPressed[2] && keyPressed[3])
+
+		obj_keyPressed[key] = true;
+		if (obj_keyPressed[0] && obj_keyPressed[1] && obj_keyPressed[2] && obj_keyPressed[3])
 		{
 			objective[0] = true;
 		}
 	}
 }
 
-void checkObjective2()
+void checkObjective1()
 {
 	if (currentObjective == 1)
 	{
@@ -688,7 +750,7 @@ void checkObjective2()
 	}
 }
 
-void checkObjective3()
+void checkObjective2()
 {
 	if (currentObjective == 2)
 	{
@@ -697,18 +759,60 @@ void checkObjective3()
 	}
 }
 
-void checkObjective4()
+void checkObjective3()
 {
 	if (currentObjective == 3)
 	{
-		static int zombieKilled = 0;
-		zombieKilled++;
 
-		if (zombieKilled >= 5) //killed 5 zombies
+		obj_zombieKilled++;
+
+		if (obj_zombieKilled >= 1) //killed required amount of zombies
 		{
 			objective[3] = true;
 		}
 	}
+}
+
+void checkObjective4()
+{
+	if (currentObjective == 4)
+	{
+		static int zones = 0;; //the zone at 4 corners
+		for (int i = 0; i < objectiveZones.size(); i++)
+		{
+			if (objectiveZones[i].checkCollision(myPlayer))
+			{
+				objectiveZones.erase(objectiveZones.begin() + i);
+				zones++;
+			}
+		}
+		gLightTexture.setColor(0, 0, 255, 200);
+		renderGameObject(camera, gLightTexture, objectiveZones);
+
+		if (zones >= 4)
+		{
+			objective[4] = true;
+		}
+	}
+}
+
+void checkEndGame()
+{
+	 if (timeLeft <= 0)
+	{
+		if (objective[TOTAL_OBJECTIVE - 1])
+		{
+			end = endState::WIN;
+		}
+		else
+		{
+			end = endState::TIME_OVER;
+		}
+	}
+	 if (myPlayer.health <= 0)
+	 {
+		 end = endState::LOSE;
+	 }
 }
 
 void updateObjective()
@@ -719,7 +823,7 @@ void updateObjective()
 	{
 	case -1: //waiting for first dialogue to finish
 		objectiveText = "waiting for objective";
-		checkObjective0();
+		checkPreObjective();
 		break;
 	case 0: //objective 1: (tutorial): press w,a,s,d
 		objectiveText = "move around the area by pressing W, A, S, D";
@@ -731,7 +835,7 @@ void updateObjective()
 		objectiveText = "reload your gun by pressing R";
 		break;
 	case 3: //objective 4: kill 5 zombies (tutorial ended, zombie start spawning now)
-		objectiveText = "kill 5 zombies";
+		objectiveText = "kill 15 zombies";
 		//spawn zombie
 		if (!spawned)
 		{
@@ -740,7 +844,7 @@ void updateObjective()
 		}
 		break;
 	case 4: //objective 5: reach to the 4 corners
-		objectiveText = "get to the 4 corners of this area";
+		objectiveText = "get to the 4 corners of this area, " + std::to_string(objectiveZones.size()) + "/4 left";
 		break;
 
 	case TOTAL_OBJECTIVE: //objective 5: All objective finished
@@ -773,17 +877,13 @@ void drawObjective()
 
 void drawTimer()
 {
-	static int timeLeft = TIME_LIMIT;
 	static float timeCounter = 0;
 	//calulate countdown time
 	if (!systemTimer.isPaused() && !tutorial && timeLeft > 0)
 	{
 		timeCounter += systemTimer.getDeltaTime();
 	}
-	else if (timeLeft <= 0)
-	{
-		//TODO: pop game and go to death screen (or push death screem) if objective not complete
-	}
+
 	if (timeCounter >= 1)
 	{
 		timeLeft -= 1;
@@ -1023,7 +1123,7 @@ void handleGameEvent()
 					myAudio.playReload();
 
 					//for objective 3
-					checkObjective3();
+					checkObjective2();
 				}
 			}
 			if (event.key.keysym.sym == SDLK_1) //weapon 1
@@ -1050,11 +1150,9 @@ void handleGameEvent()
 			}
 			if (event.key.keysym.sym == SDLK_LCTRL) //temp
 			{
-				trees.clear();
-				harmZones.clear();
-				zombies.clear();
-				allowSpawnZombie = true;
-				initLevel();
+				//allowSpawnZombie = true;
+				initedLevel = false;
+				//initLevel();
 			}
 			if (event.key.keysym.sym == SDLK_UP) //temp
 			{
@@ -1099,7 +1197,7 @@ void handleGameInput()
 		}
 
 		//for objective 1
-		checkObjective1(0);
+		checkObjective0(0);
 	}
 	if (keys[SDL_SCANCODE_S])
 	{
@@ -1114,7 +1212,7 @@ void handleGameInput()
 		}
 
 		//for objective 1		
-		checkObjective1(1);
+		checkObjective0(1);
 	}
 	if (keys[SDL_SCANCODE_A])
 	{
@@ -1129,7 +1227,7 @@ void handleGameInput()
 		}
 
 		//for objective 1
-		checkObjective1(2);
+		checkObjective0(2);
 	}
 	if (keys[SDL_SCANCODE_D])
 	{
@@ -1144,7 +1242,7 @@ void handleGameInput()
 		}
 
 		//for objective 1
-		checkObjective1(3);
+		checkObjective0(3);
 	}
 
 	if (keys[SDL_SCANCODE_LSHIFT]) //temp
@@ -1168,7 +1266,7 @@ void handleGameInput()
 			myAudio.playGunshot(myPlayer);
 
 			//for objective 2
-			checkObjective2();
+			checkObjective1();
 		}
 	}
 }
@@ -1309,28 +1407,6 @@ void updatePlayer()
 	myPlayer.render(camera);
 }
 
-void renderGameObject(LTexture& sourceTexture, std::vector<gameObject>& vectorList)
-{
-	if (vectorList.size() > 0)
-	{
-		for (int i = 0; i < vectorList.size(); i++)
-		{
-			sourceTexture.render(camera, vectorList[i].rx, vectorList[i].ry, vectorList[i].size, vectorList[i].size, NULL, vectorList[i].rotation);
-		}
-	}
-}
-
-void renderGameObject(LTexture& sourceTexture, std::vector<gameObject>& vectorList, std::vector<SDL_Rect> clips)
-{
-	if (vectorList.size() > 0 && clips.size() > 0)
-	{
-		for (int i = 0; i < vectorList.size(); i++)
-		{
-			sourceTexture.render(camera, vectorList[i].rx, vectorList[i].ry, vectorList[i].size, vectorList[i].size, &clips[vectorList[i].type], vectorList[i].rotation);
-		}
-	}
-}
-
 void updateBullet()
 {
 	int i = 0;
@@ -1380,7 +1456,7 @@ void updateBullet()
 						totalZombieKilled++;
 
 						//for objective 4
-						checkObjective4();
+						checkObjective3();
 					}
 					break;
 				}
@@ -1434,6 +1510,11 @@ void spawnZombie()
 
 void setZombieAnimation(zombie& source)
 {
+	if (source.currentTotalFrame == ZOMBIE_ATTACK_ANIMATION_FRAMES && source.currentFrame < ZOMBIE_ATTACK_ANIMATION_FRAMES)
+	{
+		source.currentState = zombieState::ATTACK;
+	}
+
 	switch (source.currentState)
 	{
 	case zombieState::WALK:
@@ -1610,13 +1691,12 @@ void Game()
 
 		//start the timers
 		systemTimer.tick();
-		systemTimer.tick();
 
 		initedLevel = true;
 	}
 
 	//While application is running
-	while (!quit && !paused &&!confirmScreen)
+	while (initedLevel && !quit && !paused &&!confirmScreen && end == endState::FALSE)
 	{
 		deltaTimer.tick();
 		SDL_GetMouseState(&mouseX, &mouseY);
@@ -1664,10 +1744,12 @@ void Game()
 
 		//Render game objects
 		//render trees
-		renderGameObject(gTreeTexture, trees, gTreeClips);
+		renderGameObject(camera, gTreeTexture, trees, gTreeClips);
 		//render harm zone
 		gLightTexture.setColor(255, 0, 0, 200);
-		renderGameObject(gLightTexture, harmZones);
+		renderGameObject(camera, gLightTexture, harmZones);
+		//check objective 4 and render objective zones
+		checkObjective4();
 
 		//Render screen effect
 		//color filter
@@ -1684,7 +1766,7 @@ void Game()
 		gBloodOverlayTexture.setColor(255, 255, 255, unsigned char(healthColor));
 		gBloodOverlayTexture.render(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
 
-		//Render text
+		//Render UI
 		drawUI();
 
 		//Render crosshair
@@ -1698,6 +1780,9 @@ void Game()
 
 		//cap frame rate
 		frameCap();
+
+		//check if end game condition is met
+		checkEndGame();
 	}
 
 	//get backdrop
@@ -1735,8 +1820,7 @@ void handlePauseEvent()
 		//check events
 		switch (event.type)
 		{
-		case SDL_QUIT: //User hit the X		
-			paused = false;
+		case SDL_QUIT: //User hit the X	
 			showConfirmScreen("Are you sure you want to quit?", confirmState::QUIT);
 			break;
 		case SDL_WINDOWEVENT:
@@ -1763,13 +1847,11 @@ void handlePauseEvent()
 			//retry button
 			if (buttons[1].checkInside(mouseX, mouseY))
 			{
-				paused = false;
 				showConfirmScreen("Are you sure you want to retry the level?", confirmState::RETRY);
 			}
 			//quit to menu button
 			if (buttons[2].checkInside(mouseX, mouseY))
 			{
-				paused = false;
 				showConfirmScreen("Are you sure you want to quit to menu?", confirmState::QUIT_TO_MENU);
 			}
 			break;
@@ -1788,7 +1870,7 @@ void Pause()
 	//SDL_WarpMouseInWindow(gWindow, SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2); //set the cursor to center of the window
 
 	//set text positions
-	int pausedOffset = SCREEN_HEIGHT / 4;
+	int pausedOffset = SCREEN_HEIGHT / 3.5;
 	int pausedX = SCREEN_WIDTH / 2;
 	int pausedY = SCREEN_HEIGHT / 2 - pausedOffset;
 	int tipsX = SCREEN_WIDTH / 2;
@@ -1813,7 +1895,7 @@ void Pause()
 	dialogueTips.currentLine = GetRandomInt(0, tipsLine.size() - 2, 1);
 	fullTips = "Tips: " + tipsLine[dialogueTips.currentLine];
 
-	while (paused)
+	while (paused && !confirmScreen)
 	{
 		deltaTimer.tick();
 		mouses = SDL_GetMouseState(&mouseX, &mouseY);
@@ -1885,7 +1967,7 @@ void hideConfirmScreen()
 {
 	confirmScreen = false;
 	confirmText = "";
-	paused = true;
+	g_StateStack.pop();
 }
 
 void handleConfirmEvent(int& choice)
@@ -1897,8 +1979,8 @@ void handleConfirmEvent(int& choice)
 		switch (event.type)
 		{
 		case SDL_QUIT: //User hit the X
-			choice = 0;
-			confirmMode = confirmState::QUIT;
+			choice = 2;
+			//confirmMode = confirmState::QUIT;
 			break;
 		case SDL_WINDOWEVENT:
 			if (event.window.event == SDL_WINDOWEVENT_RESIZED)
@@ -2006,8 +2088,8 @@ void Confirm()
 		if (confirmMode == confirmState::RETRY) //retry
 		{
 			hideConfirmScreen();
-
-			//TODO: add init level and reset objective, dialogue
+			initedLevel = false;
+			paused = false;
 			g_StateStack.pop();
 		}
 		if (confirmMode == confirmState::QUIT) //quit
@@ -2023,8 +2105,13 @@ void Confirm()
 		break;
 	case 1:
 		hideConfirmScreen();
-		g_StateStack.pop();
 		break;
+	case 2:
+		hideConfirmScreen();
+		showConfirmScreen("Are you sure you want to quit?", confirmState::QUIT);
+		StateStruct temp;
+		temp.StatePointer = Confirm;
+		g_StateStack.push(temp);
 	}
 }
 
