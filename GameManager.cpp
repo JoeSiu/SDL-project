@@ -8,44 +8,67 @@
 #include "PopUpText.h"
 #include "Button.h"
 
-//render window
+#pragma region Create_Variables
+#pragma region Rendering
 SDL_Window* gWindow = NULL;
 SDL_Renderer* gRenderer = NULL;
+#pragma endregion
 
-//for menus
+#pragma region Menus
 std::stack<StateStruct> g_StateStack;
+std::stack<StateStruct> emptyStack; //for clearing stack
+
+//menu screen
 void Menu();
+void handleMenuEvent(int& choice);
+
+//select level
+void SelectLevel();
+void handleSelectLevelEvent(int& choice);
+
+//game screen
 void Game();
+void handleGameEvent();
+void handleGameInput();
+
+//pause screen
 void Pause();
-void Exit();
+bool paused = false; //flag
+void handlePauseEvent();
 
 //confirm screen
 void Confirm();
-std::string confirmText = "";
-enum class confirmState { RETRY, QUIT, QUIT_TO_MENU };
+enum class confirmState { FALSE, RETRY, QUIT, QUIT_TO_MENU };
 confirmState confirmMode;
-void showConfirmScreen(std::string t, confirmState m);
+void showConfirmScreen(confirmState m);
 void hideConfirmScreen();
-
-//void handleMenuEvent();
-//void handleMenuInput();
-void handleGameEvent();
-void handleGameInput();
-void handlePauseEvent();
-//void handlePauseInput();
-//void handleExitEvent();
-//void handleExitInput();
+bool confirmScreen = false; //flag
 void handleConfirmEvent(int& choice);
-void clearScreen();
 
-//Create game objects
+//end game screen
+void EndGame();
+enum class endState { FALSE, WIN, LOSE, TIME_OVER };
+endState endGameMode = endState::FALSE;
+void showEndGamecreen(endState m);
+void hideEndGameScreen();
+bool endGameScreen = false; //flag
+void handleEndGameEvent(int& choice);
+
+//exit
+void Exit();
+
+void clearScreen();
+#pragma endregion
+
+#pragma region Game_Objects
 player myPlayer;
 zombie myZombie;
 gameObject myTree;
 gameObject myHarmZone;
 gameObject myObjectiveZone;
+#pragma endregion
 
-//textures
+#pragma region Textures
 //static textures
 LTexture gGroundTexture;
 LTexture gTreeTexture;
@@ -65,13 +88,15 @@ LTexture gPistolIconTexture;
 LTexture gRifleIconTexture;
 //backdrop texture used for pause screen
 SDL_Texture* backdrop;
+#pragma endregion
 
-//colors
+#pragma region Colors
 SDL_Color whiteColor = { 255, 255, 255 };
 SDL_Color blackColor = { 0, 0, 0 };
 SDL_Color UIColor = whiteColor;
+#pragma endregion
 
-//animation related
+#pragma region Animations
 double animationTimeCounter = 0;
 //player
 //animations: pistol
@@ -83,14 +108,17 @@ std::map<playerState, std::vector <SDL_Rect>> gPlayerRifleClips;
 //zombie
 std::map<zombieState, LTexture> gZombieTexture;
 std::map<zombieState, std::vector <SDL_Rect>> gZombieClips;
+#pragma endregion
 
-//tree clips
+#pragma region Trees
 std::vector <SDL_Rect> gTreeClips;
+#pragma endregion
 
-//audio
+#pragma region Audio
 audioManager myAudio;
+#pragma endregion
 
-//fonts
+#pragma region Fonts
 const int fontSize = SCREEN_HEIGHT / 30;
 const int fontSizeSmall = SCREEN_HEIGHT / 40;
 const int fontSizeLarge = SCREEN_HEIGHT / 20;
@@ -101,8 +129,9 @@ TTF_Font* boldFontSmall;
 TTF_Font* boldFontLarge;
 TTF_Font* boldFontTitle;
 TTF_Font* regularFontSmall;
+#pragma endregion
 
-//objectives related
+#pragma region Objectives
 int totalZombieKilled = 0;
 bool tutorial = true;
 int currentObjective = -1;
@@ -112,51 +141,58 @@ int timeLeft = TIME_LIMIT;
 //objective goals
 int obj_zombieKilled = 0;
 bool obj_keyPressed[4] = { false, false, false, false }; //whether w, a, s, d have been pressed
+#pragma endregion
 
-//Dialogue related
+#pragma region Dialogues
 std::vector <std::string> dialogueLine; //dialogue texts
 std::vector <std::string> tipsLine; //tips texts
 popUpText dialogue(3.0f, 1.0f);
 popUpText dialogueTips(3.0f, 2.0f);
+#pragma endregion
 
-//framerate related
+#pragma region Framerate
 LTimer systemTimer; //The frames per second timer
 LTimer deltaTimer; //The frames per second cap timer
 int countedFrames = 0; //total frames
+#pragma endregion
 
-//input
+#pragma region Input
 int mouseX;
 int mouseY;
 const Uint8* keys;
 Uint32 mouses;
+#pragma endregion
 
-//flags
+#pragma region Flags
 bool allowSpawnZombie = false; //flag for zombie spawning
 bool initedLevel = false;
 bool quit = false;
-bool paused = false;
-bool confirmScreen = false;
-enum class endState {FALSE, WIN, LOSE, TIME_OVER};
-endState end = endState::FALSE;
+#pragma endregion
 
-//Event handler
+#pragma region Event_Handler
 SDL_Event event;
+#pragma endregion
 
-//Game camera
+#pragma region Camera
 SDL_Rect camera = { 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT };
+#pragma endregion
 
-//store the game objects in vector
+#pragma region Vectors
 std::vector<gameObject> trees;
 std::vector<gameObject> harmZones;
 std::vector<zombie> zombies;
 std::vector<gameObject> bloodpools;
 std::vector<bullet> bullets;
 std::vector<gameObject> objectiveZones;
+#pragma endregion
 
-//buttons
+#pragma region Button
 button myButton;
 std::vector<button> buttons;
+#pragma endregion
+#pragma endregion
 
+#pragma region Init_And_Load_Media
 bool init()
 {
 	//Initialization flag
@@ -227,12 +263,9 @@ bool init()
 	//set base scaling
 	SDL_RenderSetLogicalSize(gRenderer, SCREEN_WIDTH, SCREEN_HEIGHT);
 
-	//add exit
 	StateStruct state;
-	state.StatePointer = Exit;
-	g_StateStack.push(state);
-	//add menu //temp: game
-	state.StatePointer = Game;
+	//add menu 
+	state.StatePointer = Menu;
 	g_StateStack.push(state);
 	return success;
 }
@@ -559,56 +592,6 @@ bool loadMedia()
 	return success;
 }
 
-void close()
-{
-	//Free static textures
-	gGroundTexture.free();
-	gTreeTexture.free();
-	gBulletTexture.free();
-	gWhiteTexture.free();
-	gBloodPoolTexture.free();
-
-	//Free loaded screen effect textures
-	gVignetteTexture.free();
-	gLightTexture.free();
-	gLensDirtTexture.free();
-	gBloodOverlayTexture.free();
-
-	//Free loaded UI textures
-	gHealthIconTexture.free();
-	gPistolIconTexture.free();
-	gRifleIconTexture.free();
-	gCrosshairTexture.free();
-
-	//free backdrop
-	SDL_DestroyTexture(backdrop);
-
-	//Destroy window
-	SDL_DestroyRenderer(gRenderer);
-	SDL_DestroyWindow(gWindow);
-	gWindow = NULL;
-	gRenderer = NULL;
-
-	//Free fonts
-	TTF_CloseFont(boldFont);
-	boldFont = NULL;
-	TTF_CloseFont(boldFontSmall);
-	boldFontSmall = NULL;
-	TTF_CloseFont(boldFontLarge);
-	boldFontLarge = NULL;
-	TTF_CloseFont(regularFont);
-	regularFont = NULL;
-	TTF_CloseFont(regularFontSmall);
-	regularFontSmall = NULL;
-
-	//Quit SDL subsystems
-	Mix_Quit();
-	IMG_Quit();
-	SDL_Quit();
-	std::stack<StateStruct> emptyStack;
-	g_StateStack.swap(emptyStack);
-}
-
 void createGameObjectRandom(gameObject source, std::vector<gameObject>& vectorList, int total, int minSize, int maxSize, int rotation = 360, int maxType = -1)
 {
 	for (int i = 0; i < total; i++)
@@ -642,10 +625,338 @@ void createGameObjectRandom(gameObject source, std::vector<gameObject>& vectorLi
 		vectorList.push_back(source);
 	}
 }
+#pragma endregion
 
+#pragma region Common_Function
+void frameCap()
+{
+	//Calculate and correct fps
+	float avgFPS = countedFrames / (systemTimer.getTicks() / 1000.f);
+	if (avgFPS > 2000000)
+	{
+		avgFPS = 0;
+	}
+	++countedFrames;
+
+	//If frame finished early
+	int frameTicks = deltaTimer.getTicks();
+	if (frameTicks < SCREEN_TICK_PER_FRAME)
+	{
+		//Wait remaining time
+		SDL_Delay(SCREEN_TICK_PER_FRAME - frameTicks);
+	}
+
+	std::string title = "SM2603 Project [avg fps: " + std::to_string(int(avgFPS)) + "] " +
+		" [X:" + std::to_string(int(myPlayer.px)) + ", Y:" + std::to_string(int(myPlayer.py)) + "]";
+	SDL_SetWindowTitle(gWindow, title.c_str());
+}
+
+void clearScreen()
+{
+	//Clear screen
+	SDL_SetRenderDrawColor(gRenderer, 100, 100, 100, 0);
+	SDL_RenderClear(gRenderer);
+}
+#pragma endregion
+
+#pragma region Menu_Screen
+void handleMenuEvent(int& choice)
+{
+	//Poll events
+	while (SDL_PollEvent(&event))
+	{
+		//check events
+		switch (event.type)
+		{
+		case SDL_QUIT: //User hit the X
+			choice = 2;
+			break;
+		case SDL_WINDOWEVENT:
+			if (event.window.event == SDL_WINDOWEVENT_RESIZED)
+			{
+				//resize window
+				SDL_SetWindowSize(gWindow, event.window.data1, event.window.data2);
+				//SCREEN_WIDTH = event.window.data1;
+				//SCREEN_HEIGHT = event.window.data2;
+			}
+			break;
+		case SDL_KEYDOWN:
+			break;
+		case SDL_MOUSEBUTTONUP:
+			//start button
+			if (buttons[0].checkInside(mouseX, mouseY))
+			{
+				choice = 0;
+			}
+			//toggle music button
+			if (buttons[1].checkInside(mouseX, mouseY))
+			{
+				choice = 1;
+				printf("music = %i\n", !setting_Music);
+			}
+			//quit
+			if (buttons[2].checkInside(mouseX, mouseY))
+			{
+				choice = 2;
+			}
+			break;
+		}
+	}
+
+	//play or pause music
+	if (setting_Music)
+	{
+		Mix_ResumeMusic();
+	}
+	else if (!setting_Music)
+	{
+		Mix_PauseMusic();
+	}
+}
+
+void Menu()
+{
+	//play background music
+	myAudio.playMainMusic();
+
+	myAudio.stopBackgroundLoop();
+
+	//show back the cursor
+	SDL_ShowCursor(SDL_ENABLE);
+	//SDL_WarpMouseInWindow(gWindow, SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2); //set the cursor to center of the window
+
+	//set text positions
+	int textOffset = SCREEN_HEIGHT / 4;
+	int textX = SCREEN_WIDTH / 2;
+	int textY = SCREEN_HEIGHT / 2 - textOffset;
+
+	//add buttons
+	//start button
+	int buttonpy = textY + SCREEN_HEIGHT / 7.5 + 75;
+	myButton.init(SCREEN_WIDTH / 2, buttonpy, 50, "Start", regularFont);
+	buttons.push_back(myButton);
+	//toggle music button
+	buttonpy += 75;
+	myButton.init(SCREEN_WIDTH / 2, buttonpy, 50, "Toggle music", regularFont);
+	buttons.push_back(myButton);
+	//quit button
+	buttonpy += 75;
+	myButton.init(SCREEN_WIDTH / 2, buttonpy, 50, "Quit", regularFont);
+	buttons.push_back(myButton);
+
+	int choice = -1; //0 for yes, 1 for no
+
+	while (choice == -1)
+	{
+		deltaTimer.tick();
+		mouses = SDL_GetMouseState(&mouseX, &mouseY);
+		handleMenuEvent(choice);
+
+		//Clear screen
+		SDL_SetRenderDrawColor(gRenderer, 0, 0, 0, 0);
+		SDL_RenderClear(gRenderer);
+
+		//Render black overlay 
+		gWhiteTexture.setColor(0, 100, 0, 255);
+		gWhiteTexture.render(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+
+		//Render title
+		drawText(textX, textY, boldFontTitle, UIColor, "TEMP TITLE", 1);
+
+		//Render buttons
+		for (int i = 0; i < buttons.size(); i++)
+		{
+			buttons[i].checkButton(mouses, mouseX, mouseY);
+			buttons[i].render(gRenderer);
+		}
+
+		//Update screen
+		SDL_RenderPresent(gRenderer);
+
+		frameCap();
+	}
+
+	//remove all buttons
+	buttons.clear();
+
+	clearScreen();
+
+	StateStruct temp;
+	switch (choice)
+	{
+	case 0: //start
+		initedLevel = false;
+		temp.StatePointer = Game;
+		g_StateStack.push(temp);
+		break;
+	case 1: //toggle music
+		setting_Music = !setting_Music;
+		break;
+	case 2: //quit
+		showConfirmScreen(confirmState::QUIT);
+		temp.StatePointer = Confirm;
+		g_StateStack.push(temp);
+	}
+
+	//get backdrop
+	SDL_Surface* screencap = SDL_CreateRGBSurface(0, SCREEN_WIDTH, SCREEN_HEIGHT, 32, 0x00ff0000, 0x0000ff00, 0x000000ff, 0xff000000);
+	SDL_RenderReadPixels(gRenderer, NULL, SDL_PIXELFORMAT_ARGB8888, screencap->pixels, screencap->pitch);
+	backdrop = SDL_CreateTextureFromSurface(gRenderer, screencap);
+	SDL_FreeSurface(screencap);
+}
+#pragma endregion
+
+#pragma region Select_Level_Screen
+void handleSelectLevelEvent(int& choice)
+{
+	//Poll events
+	while (SDL_PollEvent(&event))
+	{
+		//check events
+		switch (event.type)
+		{
+		case SDL_QUIT: //User hit the X
+			choice = 2;
+			break;
+		case SDL_WINDOWEVENT:
+			if (event.window.event == SDL_WINDOWEVENT_RESIZED)
+			{
+				//resize window
+				SDL_SetWindowSize(gWindow, event.window.data1, event.window.data2);
+				//SCREEN_WIDTH = event.window.data1;
+				//SCREEN_HEIGHT = event.window.data2;
+			}
+			break;
+		case SDL_KEYDOWN:
+			break;
+		case SDL_MOUSEBUTTONUP:
+			//start button
+			if (buttons[0].checkInside(mouseX, mouseY))
+			{
+				choice = 0;
+			}
+			//toggle music button
+			if (buttons[1].checkInside(mouseX, mouseY))
+			{
+				choice = 1;
+			}
+			//quit
+			if (buttons[2].checkInside(mouseX, mouseY))
+			{
+				choice = 2;
+			}
+			break;
+		}
+	}
+
+	//play or pause music
+	if (setting_Music)
+	{
+		Mix_ResumeMusic();
+	}
+	else if (!setting_Music)
+	{
+		Mix_PauseMusic();
+	}
+}
+
+void SelectLevel()
+{
+	//show back the cursor
+	SDL_ShowCursor(SDL_ENABLE);
+	//SDL_WarpMouseInWindow(gWindow, SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2); //set the cursor to center of the window
+
+	//set text positions
+	int textOffset = SCREEN_HEIGHT / 4;
+	int textX = SCREEN_WIDTH / 2;
+	int textY = SCREEN_HEIGHT / 2 - textOffset;
+
+	int button_levelSize = 1;
+
+	//add buttons
+	//start button
+	int buttonpy = textY + SCREEN_HEIGHT / 7.5 + 75;
+	myButton.init(SCREEN_WIDTH / 2, buttonpy, 50, "Start", regularFont);
+	buttons.push_back(myButton);
+	//toggle music button
+	buttonpy += 75;
+	myButton.init(SCREEN_WIDTH / 2, buttonpy, 50, "Toggle music", regularFont);
+	buttons.push_back(myButton);
+	//quit button
+	buttonpy += 75;
+	myButton.init(SCREEN_WIDTH / 2, buttonpy, 50, "Quit", regularFont);
+	buttons.push_back(myButton);
+
+	int choice = -1; //0 for yes, 1 for no
+
+	while (choice == -1)
+	{
+		deltaTimer.tick();
+		mouses = SDL_GetMouseState(&mouseX, &mouseY);
+		handleMenuEvent(choice);
+
+		//Clear screen
+		SDL_SetRenderDrawColor(gRenderer, 0, 0, 0, 0);
+		SDL_RenderClear(gRenderer);
+
+		//Render black overlay 
+		gWhiteTexture.setColor(0, 100, 0, 255);
+		gWhiteTexture.render(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+
+		//Render title
+		drawText(textX, textY, boldFontLarge, UIColor, "Select difficulty:", 1);
+
+		//Render buttons
+		for (int i = 0; i < buttons.size(); i++)
+		{
+			buttons[i].checkButton(mouses, mouseX, mouseY);
+			buttons[i].render(gRenderer);
+		}
+
+		//Update screen
+		SDL_RenderPresent(gRenderer);
+
+		frameCap();
+	}
+
+	//remove all buttons
+	buttons.clear();
+
+	clearScreen();
+
+	StateStruct temp;
+	switch (choice)
+	{
+	case 0: //start
+		initedLevel = false;
+		temp.StatePointer = Game;
+		g_StateStack.push(temp);
+		break;
+	case 1: //toggle music
+		setting_Music = !setting_Music;
+		break;
+	case 2: //quit
+		showConfirmScreen(confirmState::QUIT);
+		temp.StatePointer = Confirm;
+		g_StateStack.push(temp);
+	}
+
+	//get backdrop
+	SDL_Surface* screencap = SDL_CreateRGBSurface(0, SCREEN_WIDTH, SCREEN_HEIGHT, 32, 0x00ff0000, 0x0000ff00, 0x000000ff, 0xff000000);
+	SDL_RenderReadPixels(gRenderer, NULL, SDL_PIXELFORMAT_ARGB8888, screencap->pixels, screencap->pitch);
+	backdrop = SDL_CreateTextureFromSurface(gRenderer, screencap);
+	SDL_FreeSurface(screencap);
+}
+#pragma endregion
+
+#pragma region Game_Screen
 void initLevel()
 {
-	end = endState::FALSE;
+	endGameMode = endState::FALSE;
+	confirmMode = confirmState::FALSE;
+	paused = false;
+	confirmScreen = false;
+	endGameScreen = false;
 	allowSpawnZombie = false;
 
 	//clear level objects
@@ -661,7 +972,7 @@ void initLevel()
 
 
 	//if tutorial have been finished
-	if (currentObjective>=2)
+	if (currentObjective >= 2)
 	{
 		//reset objectives
 		currentObjective = 2;
@@ -766,7 +1077,7 @@ void checkObjective3()
 
 		obj_zombieKilled++;
 
-		if (obj_zombieKilled >= 1) //killed required amount of zombies
+		if (obj_zombieKilled >= ZOMBIE_NEEDED_TO_KILL) //killed required amount of zombies
 		{
 			objective[3] = true;
 		}
@@ -798,21 +1109,21 @@ void checkObjective4()
 
 void checkEndGame()
 {
-	 if (timeLeft <= 0)
+	if (timeLeft <= 0)
 	{
 		if (objective[TOTAL_OBJECTIVE - 1])
 		{
-			end = endState::WIN;
+			showEndGamecreen(endState::WIN);
 		}
 		else
 		{
-			end = endState::TIME_OVER;
+			showEndGamecreen(endState::TIME_OVER);
 		}
 	}
-	 if (myPlayer.health <= 0)
-	 {
-		 end = endState::LOSE;
-	 }
+	if (myPlayer.health <= 0)
+	{
+		showEndGamecreen(endState::LOSE);
+	}
 }
 
 void updateObjective()
@@ -1054,221 +1365,6 @@ void drawUI()
 	drawHealth();
 	drawWeapon();
 	drawDialogue();
-}
-
-void handleGameEvent()
-{
-	Uint32 windowID = SDL_GetWindowID(gWindow);
-
-	//Poll events
-	while (SDL_PollEvent(&event))
-	{
-		switch (event.type)
-		{
-		case SDL_QUIT: //User hit the X
-			showConfirmScreen("Are you sure you want to quit?", confirmState::QUIT);
-			break;
-		case SDL_WINDOWEVENT:
-			//if window is resized
-			if (event.window.event == SDL_WINDOWEVENT_RESIZED)
-			{
-				//resize window
-				SDL_SetWindowSize(gWindow, event.window.data1, event.window.data2);
-				//SCREEN_WIDTH = event.window.data1;
-				//SCREEN_HEIGHT = event.window.data2;
-			}
-			//if window have lost focus
-			if (event.window.windowID == windowID)
-			{
-				switch (event.window.event)
-				{
-				case SDL_WINDOWEVENT_FOCUS_LOST:
-
-					paused = true;
-					break;
-				}
-			}
-			break;
-		case SDL_MOUSEBUTTONDOWN:
-			if (myPlayer.myWeapon[myPlayer.currentWeapon].checkAmmo() &&
-				!myPlayer.myWeapon[myPlayer.currentWeapon].checkReload()) //shoot
-			{
-				myPlayer.currentState = playerState::FIRE;
-				myPlayer.currentFrame = 0;
-				myPlayer.myWeapon[myPlayer.currentWeapon].resetTimer();
-			}
-			else if (!myPlayer.myWeapon[myPlayer.currentWeapon].checkAmmo())
-			{
-				myAudio.playGunEmpty();
-			}
-			break;
-		case SDL_MOUSEWHEEL:
-			myPlayer.cycleWeapon();
-			myAudio.playSwapWeapon();
-		case SDL_KEYDOWN:
-			if (event.key.keysym.sym == SDLK_q) //cycle weapon
-			{
-				myPlayer.cycleWeapon();
-				myAudio.playSwapWeapon();
-				myAudio.stopReload();
-			}
-			if (event.key.keysym.sym == SDLK_r) //reload weapon
-			{
-				if (myPlayer.myWeapon[myPlayer.currentWeapon].ammo < myPlayer.myWeapon[myPlayer.currentWeapon].getClipSize() &&
-					!myPlayer.myWeapon[myPlayer.currentWeapon].getReloadFlag())
-				{
-					myPlayer.myWeapon[myPlayer.currentWeapon].reload();
-					myPlayer.currentState = playerState::RELOAD;
-					myPlayer.currentFrame = 0;
-					myAudio.playReload();
-
-					//for objective 3
-					checkObjective2();
-				}
-			}
-			if (event.key.keysym.sym == SDLK_1) //weapon 1
-			{
-				if (myPlayer.currentWeapon != 0)
-				{
-					myPlayer.currentWeapon = 0;
-					myAudio.playSwapWeapon();
-					myAudio.stopReload();
-				}
-			}
-			if (event.key.keysym.sym == SDLK_2) //weapon 2
-			{
-				if (myPlayer.currentWeapon != 1)
-				{
-					myPlayer.currentWeapon = 1;
-					myAudio.playSwapWeapon();
-					myAudio.stopReload();
-				}
-			}
-			if (event.key.keysym.sym == SDLK_ESCAPE) //esc
-			{
-				paused = true;
-			}
-			if (event.key.keysym.sym == SDLK_LCTRL) //temp
-			{
-				//allowSpawnZombie = true;
-				initedLevel = false;
-				//initLevel();
-			}
-			if (event.key.keysym.sym == SDLK_UP) //temp
-			{
-				MAX_ZOMBIE_NUM++;
-				printf("maximum zombie number = %i\n", MAX_ZOMBIE_NUM);
-			}
-			if (event.key.keysym.sym == SDLK_DOWN) //temp
-			{
-				MAX_ZOMBIE_NUM--;
-				printf("maximum zombie number = %i\n", MAX_ZOMBIE_NUM);
-			}
-			if (event.key.keysym.sym == SDLK_SPACE) //temp
-			{
-				myPlayer.health = 100;
-				printf("player health restored\n");
-			}
-			if (event.key.keysym.sym == SDLK_KP_ENTER) //temp
-			{
-				objective[4] = true; //temp
-			}
-			break;
-		}
-	}
-}
-
-void handleGameInput()
-{
-	keys = SDL_GetKeyboardState(NULL);
-	mouses = SDL_GetMouseState(&mouseX, &mouseY);
-
-	//check keyboard input
-	if (keys[SDL_SCANCODE_W])
-	{
-		if (myPlayer.py - myPlayer.size < 0)
-		{
-			myPlayer.vy = 0;
-		}
-		else
-		{
-			myPlayer.vy = -1;
-			myPlayer.currentState = playerState::WALK;
-		}
-
-		//for objective 1
-		checkObjective0(0);
-	}
-	if (keys[SDL_SCANCODE_S])
-	{
-		if (myPlayer.py + myPlayer.size > LEVEL_HEIGHT)
-		{
-			myPlayer.vy = 0;
-		}
-		else
-		{
-			myPlayer.vy = 1;
-			myPlayer.currentState = playerState::WALK;
-		}
-
-		//for objective 1		
-		checkObjective0(1);
-	}
-	if (keys[SDL_SCANCODE_A])
-	{
-		if (myPlayer.px - myPlayer.size < 0)
-		{
-			myPlayer.vx = 0;
-		}
-		else
-		{
-			myPlayer.vx = -1;
-			myPlayer.currentState = playerState::WALK;
-		}
-
-		//for objective 1
-		checkObjective0(2);
-	}
-	if (keys[SDL_SCANCODE_D])
-	{
-		if (myPlayer.px + myPlayer.size > LEVEL_WIDTH)
-		{
-			myPlayer.vx = 0;
-		}
-		else
-		{
-			myPlayer.vx = 1;
-			myPlayer.currentState = playerState::WALK;
-		}
-
-		//for objective 1
-		checkObjective0(3);
-	}
-
-	if (keys[SDL_SCANCODE_LSHIFT]) //temp
-	{
-		myPlayer.vx *= 2;
-		myPlayer.vy *= 2;
-	}
-
-	//check mouse input
-	if (mouses & SDL_BUTTON(SDL_BUTTON_LEFT))
-	{
-		if (myPlayer.myWeapon[myPlayer.currentWeapon].checkRateOfFire() &&
-			myPlayer.myWeapon[myPlayer.currentWeapon].checkAmmo() &&
-			!myPlayer.myWeapon[myPlayer.currentWeapon].checkReload())
-		{
-			myPlayer.currentState = playerState::FIRE;
-			myPlayer.currentFrame = 0;
-			myPlayer.myWeapon[myPlayer.currentWeapon].ammo--;
-			bullet myBullet(camera, myPlayer, mouseX, mouseY);
-			bullets.push_back(myBullet);
-			myAudio.playGunshot(myPlayer);
-
-			//for objective 2
-			checkObjective1();
-		}
-	}
 }
 
 void setPlayerAnimation()
@@ -1642,39 +1738,220 @@ void setCamera(SDL_Rect& camera, gameObject target) {
 	}
 }
 
-void frameCap()
+void handleGameEvent()
 {
-	//Calculate and correct fps
-	float avgFPS = countedFrames / (systemTimer.getTicks() / 1000.f);
-	if (avgFPS > 2000000)
-	{
-		avgFPS = 0;
-	}
-	++countedFrames;
+	Uint32 windowID = SDL_GetWindowID(gWindow);
 
-	//If frame finished early
-	int frameTicks = deltaTimer.getTicks();
-	if (frameTicks < SCREEN_TICK_PER_FRAME)
+	//Poll events
+	while (SDL_PollEvent(&event))
 	{
-		//Wait remaining time
-		SDL_Delay(SCREEN_TICK_PER_FRAME - frameTicks);
-	}
+		switch (event.type)
+		{
+		case SDL_QUIT: //User hit the X
+			showConfirmScreen(confirmState::QUIT);
+			break;
+		case SDL_WINDOWEVENT:
+			//if window is resized
+			if (event.window.event == SDL_WINDOWEVENT_RESIZED)
+			{
+				//resize window
+				SDL_SetWindowSize(gWindow, event.window.data1, event.window.data2);
+				//SCREEN_WIDTH = event.window.data1;
+				//SCREEN_HEIGHT = event.window.data2;
+			}
+			//if window have lost focus
+			if (event.window.windowID == windowID)
+			{
+				switch (event.window.event)
+				{
+				case SDL_WINDOWEVENT_FOCUS_LOST:
 
-	std::string title = "SM2603 Project [avg fps: " + std::to_string(int(avgFPS)) + "] " +
-		" [X:" + std::to_string(int(myPlayer.px)) + ", Y:" + std::to_string(int(myPlayer.py)) + "]";
-	SDL_SetWindowTitle(gWindow, title.c_str());
+					paused = true;
+					break;
+				}
+			}
+			break;
+		case SDL_MOUSEBUTTONDOWN:
+			if (myPlayer.myWeapon[myPlayer.currentWeapon].checkAmmo() &&
+				!myPlayer.myWeapon[myPlayer.currentWeapon].checkReload()) //shoot
+			{
+				myPlayer.currentState = playerState::FIRE;
+				myPlayer.currentFrame = 0;
+				myPlayer.myWeapon[myPlayer.currentWeapon].resetTimer();
+			}
+			else if (!myPlayer.myWeapon[myPlayer.currentWeapon].checkAmmo())
+			{
+				myAudio.playGunEmpty();
+			}
+			break;
+		case SDL_MOUSEWHEEL:
+			myPlayer.cycleWeapon();
+			myAudio.playSwapWeapon();
+			myAudio.stopReload();
+		case SDL_KEYDOWN:
+			if (event.key.keysym.sym == SDLK_q) //cycle weapon
+			{
+				myPlayer.cycleWeapon();
+				myAudio.playSwapWeapon();
+				myAudio.stopReload();
+			}
+			if (event.key.keysym.sym == SDLK_r) //reload weapon
+			{
+				if (myPlayer.myWeapon[myPlayer.currentWeapon].ammo < myPlayer.myWeapon[myPlayer.currentWeapon].getClipSize() &&
+					!myPlayer.myWeapon[myPlayer.currentWeapon].getReloadFlag())
+				{
+					myPlayer.myWeapon[myPlayer.currentWeapon].reload();
+					myPlayer.currentState = playerState::RELOAD;
+					myPlayer.currentFrame = 0;
+					myAudio.playReload();
+
+					//for objective 3
+					checkObjective2();
+				}
+			}
+			if (event.key.keysym.sym == SDLK_1) //weapon 1
+			{
+				if (myPlayer.currentWeapon != 0)
+				{
+					myPlayer.currentWeapon = 0;
+					myAudio.playSwapWeapon();
+					myAudio.stopReload();
+				}
+			}
+			if (event.key.keysym.sym == SDLK_2) //weapon 2
+			{
+				if (myPlayer.currentWeapon != 1)
+				{
+					myPlayer.currentWeapon = 1;
+					myAudio.playSwapWeapon();
+					myAudio.stopReload();
+				}
+			}
+			if (event.key.keysym.sym == SDLK_ESCAPE) //esc
+			{
+				paused = true;
+			}
+			if (event.key.keysym.sym == SDLK_LCTRL) //temp
+			{
+				//allowSpawnZombie = true;
+				initedLevel = false;
+				//initLevel();
+			}
+			if (event.key.keysym.sym == SDLK_UP) //temp
+			{
+				MAX_ZOMBIE_NUM++;
+				printf("maximum zombie number = %i\n", MAX_ZOMBIE_NUM);
+			}
+			if (event.key.keysym.sym == SDLK_DOWN) //temp
+			{
+				MAX_ZOMBIE_NUM--;
+				printf("maximum zombie number = %i\n", MAX_ZOMBIE_NUM);
+			}
+			if (event.key.keysym.sym == SDLK_SPACE) //temp
+			{
+				myPlayer.health = 100;
+				printf("player health restored\n");
+			}
+			if (event.key.keysym.sym == SDLK_KP_ENTER) //temp
+			{
+				objective[4] = true; //temp
+			}
+			break;
+		}
+	}
 }
 
-void clearScreen()
+void handleGameInput()
 {
-	//Clear screen
-	SDL_SetRenderDrawColor(gRenderer, 100, 100, 100, 0);
-	SDL_RenderClear(gRenderer);
-}
+	keys = SDL_GetKeyboardState(NULL);
+	mouses = SDL_GetMouseState(&mouseX, &mouseY);
 
-void Menu()
-{
+	//check keyboard input
+	if (keys[SDL_SCANCODE_W])
+	{
+		if (myPlayer.py - myPlayer.size < 0)
+		{
+			myPlayer.vy = 0;
+		}
+		else
+		{
+			myPlayer.vy = -1;
+			myPlayer.currentState = playerState::WALK;
+		}
 
+		//for objective 1
+		checkObjective0(0);
+	}
+	if (keys[SDL_SCANCODE_S])
+	{
+		if (myPlayer.py + myPlayer.size > LEVEL_HEIGHT)
+		{
+			myPlayer.vy = 0;
+		}
+		else
+		{
+			myPlayer.vy = 1;
+			myPlayer.currentState = playerState::WALK;
+		}
+
+		//for objective 1		
+		checkObjective0(1);
+	}
+	if (keys[SDL_SCANCODE_A])
+	{
+		if (myPlayer.px - myPlayer.size < 0)
+		{
+			myPlayer.vx = 0;
+		}
+		else
+		{
+			myPlayer.vx = -1;
+			myPlayer.currentState = playerState::WALK;
+		}
+
+		//for objective 1
+		checkObjective0(2);
+	}
+	if (keys[SDL_SCANCODE_D])
+	{
+		if (myPlayer.px + myPlayer.size > LEVEL_WIDTH)
+		{
+			myPlayer.vx = 0;
+		}
+		else
+		{
+			myPlayer.vx = 1;
+			myPlayer.currentState = playerState::WALK;
+		}
+
+		//for objective 1
+		checkObjective0(3);
+	}
+
+	if (keys[SDL_SCANCODE_LSHIFT]) //temp
+	{
+		myPlayer.vx *= 2;
+		myPlayer.vy *= 2;
+	}
+
+	//check mouse input
+	if (mouses & SDL_BUTTON(SDL_BUTTON_LEFT))
+	{
+		if (myPlayer.myWeapon[myPlayer.currentWeapon].checkRateOfFire() &&
+			myPlayer.myWeapon[myPlayer.currentWeapon].checkAmmo() &&
+			!myPlayer.myWeapon[myPlayer.currentWeapon].checkReload())
+		{
+			myPlayer.currentState = playerState::FIRE;
+			myPlayer.currentFrame = 0;
+			myPlayer.myWeapon[myPlayer.currentWeapon].ammo--;
+			bullet myBullet(camera, myPlayer, mouseX, mouseY);
+			bullets.push_back(myBullet);
+			myAudio.playGunshot(myPlayer);
+
+			//for objective 2
+			checkObjective1();
+		}
+	}
 }
 
 void Game()
@@ -1687,8 +1964,11 @@ void Game()
 		initLevel();
 
 		//play background music
-		myAudio.playBackgroundMusic();
-
+		if (setting_Music)
+		{
+			myAudio.playMainMusic();
+		}
+		myAudio.playBackgroundLoop();
 		//start the timers
 		systemTimer.tick();
 
@@ -1696,7 +1976,7 @@ void Game()
 	}
 
 	//While application is running
-	while (initedLevel && !quit && !paused &&!confirmScreen && end == endState::FALSE)
+	while (initedLevel && !quit && !paused && !confirmScreen && !endGameScreen)
 	{
 		deltaTimer.tick();
 		SDL_GetMouseState(&mouseX, &mouseY);
@@ -1803,6 +2083,11 @@ void Game()
 		temp.StatePointer = Confirm;
 		g_StateStack.push(temp);
 	}
+	if (endGameScreen)
+	{
+		temp.StatePointer = EndGame;
+		g_StateStack.push(temp);
+	}
 	if (quit)
 	{
 		while (!g_StateStack.empty())
@@ -1811,7 +2096,9 @@ void Game()
 		}
 	}
 }
+#pragma endregion
 
+#pragma region Pause_Screen
 void handlePauseEvent()
 {
 	//Poll events
@@ -1821,7 +2108,7 @@ void handlePauseEvent()
 		switch (event.type)
 		{
 		case SDL_QUIT: //User hit the X	
-			showConfirmScreen("Are you sure you want to quit?", confirmState::QUIT);
+			showConfirmScreen(confirmState::QUIT);
 			break;
 		case SDL_WINDOWEVENT:
 			if (event.window.event == SDL_WINDOWEVENT_RESIZED)
@@ -1847,12 +2134,12 @@ void handlePauseEvent()
 			//retry button
 			if (buttons[1].checkInside(mouseX, mouseY))
 			{
-				showConfirmScreen("Are you sure you want to retry the level?", confirmState::RETRY);
+				showConfirmScreen(confirmState::RETRY);
 			}
 			//quit to menu button
 			if (buttons[2].checkInside(mouseX, mouseY))
 			{
-				showConfirmScreen("Are you sure you want to quit to menu?", confirmState::QUIT_TO_MENU);
+				showConfirmScreen(confirmState::QUIT_TO_MENU);
 			}
 			break;
 		}
@@ -1878,16 +2165,16 @@ void Pause()
 
 	//add buttons
 	//resume button
-	int button1py = tipsY + 75;
-	myButton.init(SCREEN_WIDTH / 2, button1py, 50, "Resume", regularFont);
+	int buttonpy = tipsY + 75;
+	myButton.init(SCREEN_WIDTH / 2, buttonpy, 50, "Resume", regularFont);
 	buttons.push_back(myButton);
 	//retry button
-	int button2py = button1py + 75;
-	myButton.init(SCREEN_WIDTH / 2, button2py, 50, "Retry", regularFont);
+	buttonpy += 75;
+	myButton.init(SCREEN_WIDTH / 2, buttonpy, 50, "Retry", regularFont);
 	buttons.push_back(myButton);
 	//quit to menu button
-	int button3py = button2py + 75;
-	myButton.init(SCREEN_WIDTH / 2, button3py, 50, "Quit to menu", regularFont);
+	buttonpy += 75;
+	myButton.init(SCREEN_WIDTH / 2, buttonpy, 50, "Quit to menu", regularFont);
 	buttons.push_back(myButton);
 
 	//set tips
@@ -1939,9 +2226,9 @@ void Pause()
 
 	clearScreen();
 
+	StateStruct temp;
 	if (confirmScreen)
 	{
-		StateStruct temp;
 		temp.StatePointer = Confirm;
 		g_StateStack.push(temp);
 	}
@@ -1950,23 +2237,19 @@ void Pause()
 		g_StateStack.pop();
 	}
 }
+#pragma endregion
 
-void Exit()
-{
-	close();
-}
-
-void showConfirmScreen(std::string t, confirmState m)
+#pragma region Confirm_Screen
+void showConfirmScreen(confirmState m)
 {
 	confirmScreen = true;
-	confirmText = t;
 	confirmMode = m;
 }
 
 void hideConfirmScreen()
 {
 	confirmScreen = false;
-	confirmText = "";
+	confirmMode = confirmState::FALSE;
 	g_StateStack.pop();
 }
 
@@ -2030,12 +2313,12 @@ void Confirm()
 
 	//add buttons
 	//yes button
-	int button1py = textY + 75;
-	myButton.init(SCREEN_WIDTH / 2, button1py, 50, "Yes", regularFont);
+	int buttonpy = textY + 75;
+	myButton.init(SCREEN_WIDTH / 2, buttonpy, 50, "Yes", regularFont);
 	buttons.push_back(myButton);
 	//no button
-	int button2py = button1py + 75;
-	myButton.init(SCREEN_WIDTH / 2, button2py, 50, "No", regularFont);
+	buttonpy += 75;
+	myButton.init(SCREEN_WIDTH / 2, buttonpy, 50, "No", regularFont);
 	buttons.push_back(myButton);
 
 	int choice = -1; //0 for yes, 1 for no
@@ -2057,7 +2340,20 @@ void Confirm()
 		gWhiteTexture.setColor(0, 0, 0, 175);
 		gWhiteTexture.render(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
 
+		std::string confirmText = "";
 		//Render text
+		switch (confirmMode)
+		{
+		case confirmState::RETRY:
+			confirmText = "Are you sure you want to retry the level?";
+			break;
+		case confirmState::QUIT:
+			confirmText = "Are you sure you want to quit?";
+			break;
+		case confirmState::QUIT_TO_MENU:
+			confirmText = "Are you sure you want to quit to menu?";
+			break;
+		}
 		drawText(textX, textY, boldFontLarge, UIColor, confirmText, 1);
 
 		//Render buttons
@@ -2082,6 +2378,7 @@ void Confirm()
 
 	clearScreen();
 
+	StateStruct temp;
 	switch (choice)
 	{
 	case 0:
@@ -2094,27 +2391,250 @@ void Confirm()
 		}
 		if (confirmMode == confirmState::QUIT) //quit
 		{
-			StateStruct temp;
 			temp.StatePointer = Exit;
 			g_StateStack.push(temp);
 		}
 		if (confirmMode == confirmState::QUIT_TO_MENU) //quit to menu
 		{
-
-		}		
+			g_StateStack.swap(emptyStack);
+			temp.StatePointer = Menu;
+			g_StateStack.push(temp);
+		}
 		break;
 	case 1:
 		hideConfirmScreen();
 		break;
 	case 2:
 		hideConfirmScreen();
-		showConfirmScreen("Are you sure you want to quit?", confirmState::QUIT);
-		StateStruct temp;
+		showConfirmScreen(confirmState::QUIT);
 		temp.StatePointer = Confirm;
 		g_StateStack.push(temp);
 	}
 }
+#pragma endregion
 
+#pragma region End_Game_Screen
+void showEndGamecreen(endState m)
+{
+	endGameScreen = true;
+	endGameMode = m;
+}
+
+void hideEndGameScreen()
+{
+	endGameScreen = false;
+	endGameMode = endState::FALSE;
+	paused = false;
+	confirmScreen = false;
+	g_StateStack.pop();
+}
+
+void handleEndGameEvent(int& choice)
+{
+	//Poll events
+	while (SDL_PollEvent(&event))
+	{
+		//check events
+		switch (event.type)
+		{
+		case SDL_QUIT: //User hit the X
+			choice = 2;
+			//confirmMode = confirmState::QUIT;
+			break;
+		case SDL_WINDOWEVENT:
+			if (event.window.event == SDL_WINDOWEVENT_RESIZED)
+			{
+				//resize window
+				SDL_SetWindowSize(gWindow, event.window.data1, event.window.data2);
+				//SCREEN_WIDTH = event.window.data1;
+				//SCREEN_HEIGHT = event.window.data2;
+			}
+			break;
+		case SDL_KEYDOWN:
+			break;
+		case SDL_MOUSEBUTTONUP:
+			//retry button
+			if (buttons[0].checkInside(mouseX, mouseY))
+			{
+				choice = 0;
+			}
+			//quit to menu button
+			if (buttons[1].checkInside(mouseX, mouseY))
+			{
+				choice = 1;
+			}
+			break;
+		}
+	}
+}
+
+void EndGame()
+{
+	//pause all playing audios
+	Mix_PauseMusic();
+	Mix_Pause(-1);
+
+	//show back the cursor
+	SDL_ShowCursor(SDL_ENABLE);
+	//SDL_WarpMouseInWindow(gWindow, SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2); //set the cursor to center of the window
+
+	//set text positions
+	int textOffset = SCREEN_HEIGHT / 5;
+	int textX = SCREEN_WIDTH / 2;
+	int textY = SCREEN_HEIGHT / 2 - textOffset;
+
+	//add buttons
+	//yes button
+	int buttonpy = textY + SCREEN_HEIGHT / 7.5 + 75;
+	myButton.init(SCREEN_WIDTH / 2, buttonpy, 50, "Retry", regularFont);
+	buttons.push_back(myButton);
+	//no button
+	buttonpy += 75;
+	myButton.init(SCREEN_WIDTH / 2, buttonpy, 50, "Quit to menu", regularFont);
+	buttons.push_back(myButton);
+
+	int choice = -1; //0 for retry, 1 for quit to menu
+
+	while (choice == -1)
+	{
+		deltaTimer.tick();
+		mouses = SDL_GetMouseState(&mouseX, &mouseY);
+		handleConfirmEvent(choice);
+
+		//Clear screen
+		SDL_SetRenderDrawColor(gRenderer, 0, 0, 0, 0);
+		SDL_RenderClear(gRenderer);
+
+		//Render backdrop
+		SDL_RenderCopy(gRenderer, backdrop, NULL, NULL);
+
+		std::string endGameText = "";
+		//Render text
+		switch (endGameMode)
+		{
+		case endState::WIN:
+			gWhiteTexture.setColor(0, 100, 0, 175);
+			endGameText = "You win!";
+			break;
+		case endState::LOSE:
+			gWhiteTexture.setColor(100, 0, 0, 175);
+			endGameText = "You died!";
+			break;
+		case endState::TIME_OVER:
+			gWhiteTexture.setColor(100, 0, 0, 175);
+			endGameText = "Time over!";
+			break;
+		}
+		//Render overlay 
+		gWhiteTexture.render(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+
+		//Render text
+		drawText(textX, textY, boldFontTitle, UIColor, endGameText, 1);
+
+		//Render buttons
+		for (int i = 0; i < buttons.size(); i++)
+		{
+			buttons[i].checkButton(mouses, mouseX, mouseY);
+			buttons[i].render(gRenderer);
+		}
+
+		//Update screen
+		SDL_RenderPresent(gRenderer);
+
+		frameCap();
+	}
+
+	//resume all paused audios
+	Mix_ResumeMusic();
+	Mix_Resume(-1);
+
+	//remove all buttons
+	buttons.clear();
+
+	clearScreen();
+
+		StateStruct temp;
+	switch (choice)
+	{
+	case 0: //retry		
+		hideEndGameScreen();
+		initedLevel = false;
+		break;
+	case 1: //quit to menu
+		hideEndGameScreen();
+		g_StateStack.swap(emptyStack);
+		temp.StatePointer = Menu;
+		g_StateStack.push(temp);
+		break;
+	case 2: //pressed exit
+		hideEndGameScreen();
+		showConfirmScreen(confirmState::QUIT);
+		temp.StatePointer = Confirm;
+		g_StateStack.push(temp);
+	}
+}
+#pragma endregion
+
+#pragma region Exit
+void close()
+{
+	//Free static textures
+	gGroundTexture.free();
+	gTreeTexture.free();
+	gBulletTexture.free();
+	gWhiteTexture.free();
+	gBloodPoolTexture.free();
+
+	//Free loaded screen effect textures
+	gVignetteTexture.free();
+	gLightTexture.free();
+	gLensDirtTexture.free();
+	gBloodOverlayTexture.free();
+
+	//Free loaded UI textures
+	gHealthIconTexture.free();
+	gPistolIconTexture.free();
+	gRifleIconTexture.free();
+	gCrosshairTexture.free();
+
+	//free backdrop
+	SDL_DestroyTexture(backdrop);
+
+	//Destroy window
+	SDL_DestroyRenderer(gRenderer);
+	SDL_DestroyWindow(gWindow);
+	gWindow = NULL;
+	gRenderer = NULL;
+
+	//Free fonts
+	TTF_CloseFont(boldFont);
+	boldFont = NULL;
+	TTF_CloseFont(boldFontSmall);
+	boldFontSmall = NULL;
+	TTF_CloseFont(boldFontLarge);
+	boldFontLarge = NULL;
+	TTF_CloseFont(boldFontTitle);
+	boldFontTitle = NULL;
+	TTF_CloseFont(regularFont);
+	regularFont = NULL;
+	TTF_CloseFont(regularFontSmall);
+	regularFontSmall = NULL;
+
+	//Quit SDL subsystems
+	Mix_Quit();
+	IMG_Quit();
+	SDL_Quit();
+	
+	g_StateStack.swap(emptyStack);
+}
+
+void Exit()
+{
+	close();
+}
+#pragma endregion
+
+#pragma region Main
 int main(int argc, char* argv[])
 {
 	srand((unsigned)time(0)); //random seed
@@ -2143,3 +2663,4 @@ int main(int argc, char* argv[])
 		return 0;
 	}
 }
+#pragma endregion

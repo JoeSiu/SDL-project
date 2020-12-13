@@ -135,15 +135,26 @@ void audioManager::loadAudio()
 	Mix_Volume(-1, 64);
 }
 
-void audioManager::playBackgroundMusic()
+void audioManager::playMainMusic()
 {
 	//Play the music
 	Mix_PlayMusic(music, -1);
+}
 
+
+void audioManager::playBackgroundLoop()
+{
 	//Play ambient sound and walk loop
-	Mix_PlayChannel(AMBIENT_CHANNEL, ambient, -1); //start the infinite walk sound effect
+	Mix_PlayChannel(AMBIENT_CHANNEL, ambient, -1); //start the infinite ambient sound effect
 	Mix_PlayChannel(WALK_CHANNEL, walk, -1); //start the infinite walk sound effect
 }
+
+void audioManager::stopBackgroundLoop()
+{
+	Mix_HaltChannel(AMBIENT_CHANNEL);
+	Mix_HaltChannel(WALK_CHANNEL);
+}
+
 
 void audioManager::setSoundEffect(int channel, Mix_Chunk* soundEffect)
 {

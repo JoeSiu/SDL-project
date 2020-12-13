@@ -12,7 +12,9 @@ public:
 	bool loadMultiFile(std::vector<Mix_Chunk*>& target, std::string name, std::string format, int total);
 	void freeSound(Mix_Chunk* target);
 	void freeMultiSounds(std::vector<Mix_Chunk*>& target);
-	void playBackgroundMusic();
+	void playMainMusic();
+	void playBackgroundLoop();
+	void stopBackgroundLoop();
 	void setSoundEffect(int channel, Mix_Chunk* soundEffect);
 	void setSoundEffect(int channel, Mix_Chunk* soundEffect, gameObject source);
 	void playRadio();

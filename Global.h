@@ -68,8 +68,9 @@ const int MAX_HARM_ZONE_DAMAGE = 20;
 const int MAX_BLOOD_POOL_NUM = 50;
 
 //objectives
-const int TIME_LIMIT = 600; //total game time in second
+const int TIME_LIMIT = 360; //total game time in second
 const int TOTAL_OBJECTIVE = 5;
+const int ZOMBIE_NEEDED_TO_KILL = 15; //for objective 4
 
 //player properties
 const int PLAYER_SIZE = 100;
@@ -135,6 +136,9 @@ const int PLAYER_RIFLE_RELOAD_ANIMATION_FRAMES = 20;
 //zombie
 const int ZOMBIE_WALK_ANIMATION_FRAMES = 17;
 const int ZOMBIE_ATTACK_ANIMATION_FRAMES = 9;
+
+//settings
+static bool setting_Music = true;
 
 int GetRandomInt(int min_value, int max_value, int step);
 float GetRandomFloat(float min_value, float max_value, float step);
