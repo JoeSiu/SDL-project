@@ -24,6 +24,9 @@ public:
 	void pauseWalk();
 	void playReload();
 	void stopReload();
+	void playCollectObject();
+	void playGameLose();
+	void playGameWin();
 	void playZombieAttack(gameObject source);
 	void playHitZombie(gameObject source);
 	void playGunshot(gameObject source);
@@ -56,6 +59,9 @@ private:
 	Mix_Chunk* swapWeapon;
 	Mix_Chunk* gunEmpty;
 	Mix_Chunk* hitTree;
+	Mix_Chunk* collectObject;
+	Mix_Chunk* gameLose;
+	Mix_Chunk* gameWin;
 	std::vector<Mix_Chunk*> playerHurt;
 	std::vector<Mix_Chunk*> gunshot;
 	std::vector<Mix_Chunk*> zombieAttack;

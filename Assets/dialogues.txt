@@ -6,7 +6,7 @@ Don't walk into the toxic red mist though.
 //end part//
 Good, now shoot your gun with left mouse button.
 You can switch weapon using Q or mouse wheel also.
-And remember you can't shoot through the trees.
+And remember you can't shoot through the bushes.
 //end part//
 Great, now reload your gun by pressing R.
 //end part//
@@ -15,9 +15,10 @@ Seems the zombies are heading to your position now!
 Watch out and don't let them get close to you!
 //end part//
 Well we don't have much time left now.
-Your mission is to recover the 4 missing signals.
-They should be around the 4 corners of this area.
-And they are marked with a blue zone also.
+Your mission is to recover the 5 missing signals.
+4 of them should be at the 4 corners of this area.
+But the last one is unknown, you have to find it yourself.
+They are marked with a blue zone also.
 Good luck!
 //end part//
 Great! Seems you have recovered all missing signals.

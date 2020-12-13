@@ -22,10 +22,6 @@ std::stack<StateStruct> emptyStack; //for clearing stack
 void Menu();
 void handleMenuEvent(int& choice);
 
-//select level
-void SelectLevel();
-void handleSelectLevelEvent(int& choice);
-
 //game screen
 void Game();
 void handleGameEvent();
@@ -86,6 +82,8 @@ LTexture gBloodOverlayTexture;
 LTexture gHealthIconTexture;
 LTexture gPistolIconTexture;
 LTexture gRifleIconTexture;
+//background texture for menu
+LTexture gMenuTexture;
 //backdrop texture used for pause screen
 SDL_Texture* backdrop;
 #pragma endregion
@@ -167,6 +165,7 @@ Uint32 mouses;
 bool allowSpawnZombie = false; //flag for zombie spawning
 bool initedLevel = false;
 bool quit = false;
+bool cheat = false;
 #pragma endregion
 
 #pragma region Event_Handler
@@ -356,6 +355,12 @@ bool loadMedia()
 	if (!gBloodPoolTexture.loadFromFile("Assets/Texture/blood pool.png"))
 	{
 		printf("Failed to load white texture!\n");
+		success = false;
+	}
+
+	if (!gMenuTexture.loadFromFile("Assets/Texture/menu background.jpg"))
+	{
+		printf("Failed to load menu background texture!\n");
 		success = false;
 	}
 #pragma endregion
@@ -692,7 +697,6 @@ void handleMenuEvent(int& choice)
 			if (buttons[1].checkInside(mouseX, mouseY))
 			{
 				choice = 1;
-				printf("music = %i\n", !setting_Music);
 			}
 			//quit
 			if (buttons[2].checkInside(mouseX, mouseY))
@@ -757,12 +761,20 @@ void Menu()
 		SDL_RenderClear(gRenderer);
 
 		//Render black overlay 
-		gWhiteTexture.setColor(0, 100, 0, 255);
-		gWhiteTexture.render(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+		gMenuTexture.render(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
 
 		//Render title
-		drawText(textX, textY, boldFontTitle, UIColor, "TEMP TITLE", 1);
+		drawText(textX, textY, boldFontTitle, UIColor, "Dark Zone", 1);
 
+		//set toggle music text
+		if (setting_Music)
+		{
+			buttons[1].setText("Music On");
+		}
+		else if (!setting_Music)
+		{
+			buttons[1].setText("Music Off");
+		}
 		//Render buttons
 		for (int i = 0; i < buttons.size(); i++)
 		{
@@ -799,159 +811,14 @@ void Menu()
 	}
 
 	//get backdrop
-	SDL_Surface* screencap = SDL_CreateRGBSurface(0, SCREEN_WIDTH, SCREEN_HEIGHT, 32, 0x00ff0000, 0x0000ff00, 0x000000ff, 0xff000000);
-	SDL_RenderReadPixels(gRenderer, NULL, SDL_PIXELFORMAT_ARGB8888, screencap->pixels, screencap->pitch);
-	backdrop = SDL_CreateTextureFromSurface(gRenderer, screencap);
-	SDL_FreeSurface(screencap);
-}
-#pragma endregion
-
-#pragma region Select_Level_Screen
-void handleSelectLevelEvent(int& choice)
-{
-	//Poll events
-	while (SDL_PollEvent(&event))
-	{
-		//check events
-		switch (event.type)
-		{
-		case SDL_QUIT: //User hit the X
-			choice = 2;
-			break;
-		case SDL_WINDOWEVENT:
-			if (event.window.event == SDL_WINDOWEVENT_RESIZED)
-			{
-				//resize window
-				SDL_SetWindowSize(gWindow, event.window.data1, event.window.data2);
-				//SCREEN_WIDTH = event.window.data1;
-				//SCREEN_HEIGHT = event.window.data2;
-			}
-			break;
-		case SDL_KEYDOWN:
-			break;
-		case SDL_MOUSEBUTTONUP:
-			//start button
-			if (buttons[0].checkInside(mouseX, mouseY))
-			{
-				choice = 0;
-			}
-			//toggle music button
-			if (buttons[1].checkInside(mouseX, mouseY))
-			{
-				choice = 1;
-			}
-			//quit
-			if (buttons[2].checkInside(mouseX, mouseY))
-			{
-				choice = 2;
-			}
-			break;
-		}
-	}
-
-	//play or pause music
-	if (setting_Music)
-	{
-		Mix_ResumeMusic();
-	}
-	else if (!setting_Music)
-	{
-		Mix_PauseMusic();
-	}
-}
-
-void SelectLevel()
-{
-	//show back the cursor
-	SDL_ShowCursor(SDL_ENABLE);
-	//SDL_WarpMouseInWindow(gWindow, SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2); //set the cursor to center of the window
-
-	//set text positions
-	int textOffset = SCREEN_HEIGHT / 4;
-	int textX = SCREEN_WIDTH / 2;
-	int textY = SCREEN_HEIGHT / 2 - textOffset;
-
-	int button_levelSize = 1;
-
-	//add buttons
-	//start button
-	int buttonpy = textY + SCREEN_HEIGHT / 7.5 + 75;
-	myButton.init(SCREEN_WIDTH / 2, buttonpy, 50, "Start", regularFont);
-	buttons.push_back(myButton);
-	//toggle music button
-	buttonpy += 75;
-	myButton.init(SCREEN_WIDTH / 2, buttonpy, 50, "Toggle music", regularFont);
-	buttons.push_back(myButton);
-	//quit button
-	buttonpy += 75;
-	myButton.init(SCREEN_WIDTH / 2, buttonpy, 50, "Quit", regularFont);
-	buttons.push_back(myButton);
-
-	int choice = -1; //0 for yes, 1 for no
-
-	while (choice == -1)
-	{
-		deltaTimer.tick();
-		mouses = SDL_GetMouseState(&mouseX, &mouseY);
-		handleMenuEvent(choice);
-
-		//Clear screen
-		SDL_SetRenderDrawColor(gRenderer, 0, 0, 0, 0);
-		SDL_RenderClear(gRenderer);
-
-		//Render black overlay 
-		gWhiteTexture.setColor(0, 100, 0, 255);
-		gWhiteTexture.render(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
-
-		//Render title
-		drawText(textX, textY, boldFontLarge, UIColor, "Select difficulty:", 1);
-
-		//Render buttons
-		for (int i = 0; i < buttons.size(); i++)
-		{
-			buttons[i].checkButton(mouses, mouseX, mouseY);
-			buttons[i].render(gRenderer);
-		}
-
-		//Update screen
-		SDL_RenderPresent(gRenderer);
-
-		frameCap();
-	}
-
-	//remove all buttons
-	buttons.clear();
-
-	clearScreen();
-
-	StateStruct temp;
-	switch (choice)
-	{
-	case 0: //start
-		initedLevel = false;
-		temp.StatePointer = Game;
-		g_StateStack.push(temp);
-		break;
-	case 1: //toggle music
-		setting_Music = !setting_Music;
-		break;
-	case 2: //quit
-		showConfirmScreen(confirmState::QUIT);
-		temp.StatePointer = Confirm;
-		g_StateStack.push(temp);
-	}
-
-	//get backdrop
-	SDL_Surface* screencap = SDL_CreateRGBSurface(0, SCREEN_WIDTH, SCREEN_HEIGHT, 32, 0x00ff0000, 0x0000ff00, 0x000000ff, 0xff000000);
-	SDL_RenderReadPixels(gRenderer, NULL, SDL_PIXELFORMAT_ARGB8888, screencap->pixels, screencap->pitch);
-	backdrop = SDL_CreateTextureFromSurface(gRenderer, screencap);
-	SDL_FreeSurface(screencap);
+	backdrop = gMenuTexture.getSDLTexture();
 }
 #pragma endregion
 
 #pragma region Game_Screen
 void initLevel()
 {
+	//reset state and flags
 	endGameMode = endState::FALSE;
 	confirmMode = confirmState::FALSE;
 	paused = false;
@@ -967,15 +834,21 @@ void initLevel()
 	bullets.clear();
 	objectiveZones.clear();
 
-	//set timer
+	//reset difficulty
+	DIFFICULTY = 1;
+	totalZombieKilled = 0;
+
+	//reset timer
 	timeLeft = TIME_LIMIT;
 
+	//reset sound effects
+	Mix_HaltChannel(-1);
 
 	//if tutorial have been finished
 	if (currentObjective >= 2)
 	{
 		//reset objectives
-		currentObjective = 2;
+		currentObjective = 3;
 		objective[0] = true;
 		objective[1] = true;
 		objective[2] = true;
@@ -985,10 +858,10 @@ void initLevel()
 			objective[i] = false;
 		}
 		obj_zombieKilled = 0;
-
+		allowSpawnZombie = true;
 		//reset dialogues
-		dialogue.currentLine = 12;
-		dialogue.currentPart = 3;
+		dialogue.currentLine = 16;
+		dialogue.currentPart = 4;
 	}
 	else
 	{
@@ -1021,7 +894,7 @@ void initLevel()
 	//create harmzone
 	createGameObjectRandom(myHarmZone, harmZones, MAX_HARM_ZONE_NUM * DIFFICULTY, MIN_HARM_ZONE_SIZE, MAX_HARM_ZONE_SIZE);
 
-	//create objective zones for objective 5 (reach 4 corners)
+	//create objective zones for objective 5 (reach 4 corners + 1 random)
 	myObjectiveZone.init(500, 500, 500, 0);
 	objectiveZones.push_back(myObjectiveZone);
 	myObjectiveZone.init(500, LEVEL_HEIGHT - 500, 500, 0);
@@ -1030,6 +903,8 @@ void initLevel()
 	objectiveZones.push_back(myObjectiveZone);
 	myObjectiveZone.init(LEVEL_WIDTH - 500, LEVEL_HEIGHT - 500, 500, 0);
 	objectiveZones.push_back(myObjectiveZone);
+	createGameObjectRandom(myObjectiveZone, objectiveZones, 1, 500, 500, 0); //random objective zone
+	printf("random objective location = %f, %f\n", objectiveZones.back().px, objectiveZones.back().py);
 }
 
 void checkPreObjective()
@@ -1088,19 +963,20 @@ void checkObjective4()
 {
 	if (currentObjective == 4)
 	{
-		static int zones = 0;; //the zone at 4 corners
+		static int zones = objectiveZones.size(); //the zone at 4 corners
 		for (int i = 0; i < objectiveZones.size(); i++)
 		{
 			if (objectiveZones[i].checkCollision(myPlayer))
 			{
 				objectiveZones.erase(objectiveZones.begin() + i);
-				zones++;
+				myAudio.playCollectObject();
+				zones--;
 			}
 		}
 		gLightTexture.setColor(0, 0, 255, 200);
 		renderGameObject(camera, gLightTexture, objectiveZones);
 
-		if (zones >= 4)
+		if (zones <= 0)
 		{
 			objective[4] = true;
 		}
@@ -1145,8 +1021,8 @@ void updateObjective()
 	case 2: //objective 3: (tutorial): reload gun
 		objectiveText = "reload your gun by pressing R";
 		break;
-	case 3: //objective 4: kill 5 zombies (tutorial ended, zombie start spawning now)
-		objectiveText = "kill 15 zombies";
+	case 3: //objective 4: kill required amount of zombies (tutorial ended, zombie start spawning now)
+		objectiveText = "kill " + std::to_string(ZOMBIE_NEEDED_TO_KILL) + " zombies, " + std::to_string(ZOMBIE_NEEDED_TO_KILL - obj_zombieKilled) + "/" + std::to_string(ZOMBIE_NEEDED_TO_KILL) + " left";
 		//spawn zombie
 		if (!spawned)
 		{
@@ -1154,8 +1030,8 @@ void updateObjective()
 			spawned = true;
 		}
 		break;
-	case 4: //objective 5: reach to the 4 corners
-		objectiveText = "get to the 4 corners of this area, " + std::to_string(objectiveZones.size()) + "/4 left";
+	case 4: //objective 5: find 5 missing signels
+		objectiveText = "find the missing signel, " + std::to_string(objectiveZones.size()) + "/5 left";
 		break;
 
 	case TOTAL_OBJECTIVE: //objective 5: All objective finished
@@ -1463,6 +1339,18 @@ void updatePlayer()
 	//calulate player rotation
 	myPlayer.calRotation(camera, mouseX, mouseY);
 
+	myPlayer.speed = PLAYER_SPEED;
+	//slow down player if player walk into trees
+	for (int i = 0; i < trees.size(); i++)
+	{
+		if (myPlayer.checkCollision(trees[i]))
+		{
+			myPlayer.speed *= 0.75;
+			myPlayer.speed *= 0.75;
+			break;
+		}
+	}
+
 	//calulate player position
 	float dirX = myPlayer.vx * myPlayer.speed * deltaTimer.getDeltaTime();
 	float dirY = myPlayer.vy * myPlayer.speed * deltaTimer.getDeltaTime();
@@ -1470,16 +1358,7 @@ void updatePlayer()
 	myPlayer.py += dirY;
 
 	//check collision with game objects
-		//trees
-	/*for (int i = 0; i < trees.size(); i++)
-	{
-		if (myPlayer.checkCollision(trees[i]))
-		{
-			myPlayer.px -= dirX;
-			myPlayer.py -= dirY;
-			break;
-		}
-	}*/
+	//zombies
 	for (int i = 0; i < zombies.size(); i++)
 	{
 		if (zombies[i].currentState != zombieState::DEAD && myPlayer.checkCollision(zombies[i], zombies[i].attackRange))
@@ -1515,8 +1394,6 @@ void updateBullet()
 	gBulletTexture.setColor(255, 200, 0);
 	while (i < bullets.size())
 	{
-		//float offsetX = cos(myPlayer.rotation * M_PI / 180.0) * PLAYER_SIZE / 2;
-		//float offsetY = sin(myPlayer.rotation * M_PI / 180.0) * PLAYER_SIZE / 2;
 		bullets[i].px += bullets[i].vx;
 		bullets[i].py += bullets[i].vy;
 
@@ -1603,9 +1480,8 @@ void spawnZombie()
 		{
 			myZombie.init();
 			zombies.push_back(myZombie);
-			printf("spawned a zombie, type = %i\n", zombies.back().type); //temp
 		}
-		printf("--- total zombie = %i ---\n", zombies.size()); //temp
+		printf("--- spawned zombies. total zombie = %i ---\n", zombies.size());
 		allowSpawnZombie = false;
 	}
 }
@@ -1837,30 +1713,77 @@ void handleGameEvent()
 			{
 				paused = true;
 			}
-			if (event.key.keysym.sym == SDLK_LCTRL) //temp
+
+			if (event.key.keysym.sym == SDLK_BACKQUOTE) //cheat toggle
 			{
-				//allowSpawnZombie = true;
-				initedLevel = false;
-				//initLevel();
+				cheat = !cheat;
+				printf("---cheat mode: %i---\n", cheat);
 			}
-			if (event.key.keysym.sym == SDLK_UP) //temp
+
+			if (event.key.keysym.sym == SDLK_SPACE) //cheat: restore health
 			{
-				MAX_ZOMBIE_NUM++;
-				printf("maximum zombie number = %i\n", MAX_ZOMBIE_NUM);
+				if (cheat)
+				{
+					myPlayer.health = 100;
+					printf("Cheat: player health restored\n");
+				}
 			}
-			if (event.key.keysym.sym == SDLK_DOWN) //temp
+
+			if (event.key.keysym.sym == SDLK_HOME) //cheat: toggle god mode
 			{
-				MAX_ZOMBIE_NUM--;
-				printf("maximum zombie number = %i\n", MAX_ZOMBIE_NUM);
+				if (cheat)
+				{
+					static bool godMode = false;
+					godMode = !godMode;
+					if (godMode) { myPlayer.health = 99999999; }
+					if (!godMode) { myPlayer.health = 100; }
+					printf("Cheat: god mode = %i\n", godMode);
+				}
 			}
-			if (event.key.keysym.sym == SDLK_SPACE) //temp
+
+			if (event.key.keysym.sym == SDLK_END) //cheat: instant kill
 			{
-				myPlayer.health = 100;
-				printf("player health restored\n");
+				if (cheat)
+				{
+					myPlayer.health = -100;
+					printf("Cheat: instant kill\n");
+				}
 			}
-			if (event.key.keysym.sym == SDLK_KP_ENTER) //temp
+
+			if (event.key.keysym.sym == SDLK_DELETE) //cheat: kill all zombies
 			{
-				objective[4] = true; //temp
+				if (cheat)
+				{
+					zombies.clear();
+					printf("Cheat: killed all zombies\n");
+				}
+			}
+
+			if (event.key.keysym.sym == SDLK_INSERT) //cheat: spawn zombies
+			{
+				if (cheat)
+				{
+					allowSpawnZombie = !allowSpawnZombie;
+					printf("Cheat: force spawn zombies\n");
+				}
+			}
+
+			if (event.key.keysym.sym == SDLK_UP) //cheat: increase total zombie numbers
+			{
+				if (cheat)
+				{
+					totalZombieKilled+= DIFFICULTY_REQUIREMENT;
+					printf("Cheat: maximum zombies: %i\n", MAX_ZOMBIE_NUM);
+				}
+			}
+
+			if (event.key.keysym.sym == SDLK_DOWN) //cheat: decrease total zombie numbers
+			{
+				if (cheat)
+				{
+					totalZombieKilled -= DIFFICULTY_REQUIREMENT;
+					printf("Cheat: maximum zombies: %i\n", MAX_ZOMBIE_NUM);
+				}
 			}
 			break;
 		}
@@ -1934,10 +1857,13 @@ void handleGameInput()
 		checkObjective0(3);
 	}
 
-	if (keys[SDL_SCANCODE_LSHIFT]) //temp
+	if (keys[SDL_SCANCODE_LSHIFT]) //cheat: double speed
 	{
-		myPlayer.vx *= 2;
-		myPlayer.vy *= 2;
+		if (cheat)
+		{
+			myPlayer.vx *= 2;
+			myPlayer.vy *= 2;
+		}
 	}
 
 	//check mouse input
@@ -1975,8 +1901,6 @@ void Game()
 			myAudio.playMainMusic();
 		}
 		myAudio.playBackgroundLoop();
-		//start the timers
-		systemTimer.tick();
 
 		initedLevel = true;
 	}
@@ -2058,9 +1982,6 @@ void Game()
 		//Render crosshair
 		renderCrosshair();
 
-		//Update screen
-		SDL_RenderPresent(gRenderer);
-
 		//Update animation timer
 		updateAnimation();
 
@@ -2069,6 +1990,16 @@ void Game()
 
 		//check if end game condition is met
 		checkEndGame();
+
+		float offsetX = 0;
+		float offsetY = 20;
+		float distance = 20.0f;
+		double theta = myPlayer.rotation * (M_PI / 180);
+		float posX = myPlayer.px + (offsetX * cos(theta) - offsetY * sin(theta));
+		float posY = myPlayer.py + (offsetX * sin(theta) + offsetY * cos(theta));
+		
+		//Update screen
+		SDL_RenderPresent(gRenderer);
 	}
 
 	//get backdrop
@@ -2479,6 +2410,18 @@ void EndGame()
 	//pause all playing audios
 	Mix_PauseMusic();
 	Mix_Pause(-1);
+	switch (endGameMode)
+	{
+	case endState::WIN:
+		myAudio.playGameWin();
+		break;
+	case endState::LOSE:
+		myAudio.playGameLose();
+		break;
+	case endState::TIME_OVER:
+		myAudio.playGameLose();
+		break;
+	}
 
 	//show back the cursor
 	SDL_ShowCursor(SDL_ENABLE);
@@ -2604,6 +2547,7 @@ void close()
 	gBulletTexture.free();
 	gWhiteTexture.free();
 	gBloodPoolTexture.free();
+	gMenuTexture.free();
 
 	//Free loaded screen effect textures
 	gVignetteTexture.free();
@@ -2673,6 +2617,9 @@ int main(int argc, char* argv[])
 		}
 		else
 		{
+			//start the timers
+			systemTimer.tick();
+
 			// Our game loop is just a while loop that breaks when our state stack is empty. //
 			while (!g_StateStack.empty())
 			{

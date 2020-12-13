@@ -53,7 +53,7 @@ const int CROSSHAIR_SIZE = SCREEN_HEIGHT / 35;
 //level elements' properties
 static int DIFFICULTY = 1; //difficulty will increase the maximum zombie numbers when spawning
 const int DIFFICULTY_REQUIREMENT = 10; //the required zombies to kill in order to advance to next level
-const int ZOMBIE_NUMBER_STEP = 5; //how many zombie added for each difficulty
+const int ZOMBIE_NUMBER_STEP = 3; //how many zombie added for each difficulty
 const int COLLIDER_TOLERANCE = 2; //the collider size tolerance for the game objects
 //trees
 const int MAX_TREE_NUM = 10 * LEVEL_SIZE;
@@ -68,14 +68,14 @@ const int MAX_HARM_ZONE_DAMAGE = 20;
 const int MAX_BLOOD_POOL_NUM = 50;
 
 //objectives
-const int TIME_LIMIT = 360; //total game time in second
+const int TIME_LIMIT = 450; //total game time in second
 const int TOTAL_OBJECTIVE = 5;
-const int ZOMBIE_NEEDED_TO_KILL = 15; //for objective 4
+const int ZOMBIE_NEEDED_TO_KILL = 10; //for objective 4
 
 //player properties
 const int PLAYER_SIZE = 100;
 const int PLAYER_STATE = 4;
-const int PLAYER_SPEED = 250;
+const int PLAYER_SPEED = 300;
 const int PLAYER_WEAPON_SLOT = 2;
 
 //weapon properties

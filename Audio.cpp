@@ -104,6 +104,27 @@ void audioManager::loadAudio()
 		exit(1);
 	}
 
+	collectObject = Mix_LoadWAV("Assets/Audio/collect object.mp3");
+	if (walk == NULL)
+	{
+		printf("Failed to load collect object effect! SDL_mixer Error: %s\n", Mix_GetError());
+		exit(1);
+	}
+
+	gameLose = Mix_LoadWAV("Assets/Audio/game lose.wav");
+	if (walk == NULL)
+	{
+		printf("Failed to load game lose effect! SDL_mixer Error: %s\n", Mix_GetError());
+		exit(1);
+	}
+
+	gameWin = Mix_LoadWAV("Assets/Audio/game win.wav");
+	if (walk == NULL)
+	{
+		printf("Failed to load game win effect! SDL_mixer Error: %s\n", Mix_GetError());
+		exit(1);
+	}
+
 	if (!loadMultiFile(playerHurt, "player hurt", "mp3", PLAYER_HURT_VARIATION))
 	{
 		printf("Failed to load player hurt effect! SDL_mixer Error: %s\n", Mix_GetError());
@@ -239,6 +260,21 @@ void audioManager::playGunEmpty()
 	setSoundEffect(4, gunEmpty);
 }
 
+void audioManager::playCollectObject()
+{
+	setSoundEffect(-1, collectObject);
+}
+
+void audioManager::playGameLose()
+{
+	setSoundEffect(-1, gameLose);
+}
+
+void audioManager::playGameWin()
+{
+	setSoundEffect(-1, gameWin);
+}
+
 void audioManager::freeAudio()
 {
 	freeSound(ambient);
@@ -248,6 +284,9 @@ void audioManager::freeAudio()
 	freeSound(swapWeapon);
 	freeSound(gunEmpty);
 	freeSound(hitTree);
+	freeSound(collectObject);
+	freeSound(gameLose);
+	freeSound(gameWin);
 
 	freeMultiSounds(playerHurt);
 	freeMultiSounds(gunshot);

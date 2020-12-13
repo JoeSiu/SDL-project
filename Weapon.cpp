@@ -4,8 +4,13 @@ bullet::bullet(SDL_Rect& camera, gameObject source, int targetX, int targetY)
 {
 	size = BULLET_SIZE;
 
-	px = source.px;
-	py = source.py;
+	float offsetX = 30;
+	float offsetY = 20;
+	double theta = source.rotation * (M_PI / 180);
+	px = source.px + (offsetX * cos(theta) - offsetY * sin(theta));
+	py = source.py + (offsetX * sin(theta) + offsetY * cos(theta));
+	//px = source.px;
+	//py = source.py;
 
 	setRenderPosition(px, py);
 	speed = BULLET_SPEED * deltaTimer.getDeltaTime();

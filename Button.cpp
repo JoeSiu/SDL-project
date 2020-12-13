@@ -43,6 +43,12 @@ void button::checkButton(Uint32 mouses, int x, int y)
     }
 }
 
+void button::setText(std::string t)
+{
+    text = t;
+}
+
+
 void button::render(SDL_Renderer* target)
 {
     //TODO: fix render
