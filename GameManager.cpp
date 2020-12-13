@@ -1232,6 +1232,12 @@ void drawTimer()
 }
 
 void drawHealth() {
+	//set health to 0 if it drop below 0
+	if (myPlayer.health < 0)
+	{
+		myPlayer.health = 0;
+	}
+
 	//size of icons
 	int healthBarWidth = map(myPlayer.health, 0, 100, 0, SCREEN_WIDTH / 5); //map player's current health to the health bar width
 	int healthBarHeight = SCREEN_HEIGHT / 100;
@@ -2482,10 +2488,12 @@ void EndGame()
 	int textOffset = SCREEN_HEIGHT / 5;
 	int textX = SCREEN_WIDTH / 2;
 	int textY = SCREEN_HEIGHT / 2 - textOffset;
+	int tipsX = SCREEN_WIDTH / 2;
+	int tipsY = textY + SCREEN_HEIGHT / 5;
 
 	//add buttons
 	//yes button
-	int buttonpy = textY + SCREEN_HEIGHT / 7.5 + 75;
+	int buttonpy = tipsY + 75;
 	myButton.init(SCREEN_WIDTH / 2, buttonpy, 50, "Retry", regularFont);
 	buttons.push_back(myButton);
 	//no button
@@ -2494,6 +2502,11 @@ void EndGame()
 	buttons.push_back(myButton);
 
 	int choice = -1; //0 for retry, 1 for quit to menu
+
+	//set tips
+	std::string fullTips;
+	dialogueTips.currentLine = GetRandomInt(0, tipsLine.size() - 2, 1);
+	fullTips = "Tips: " + tipsLine[dialogueTips.currentLine];
 
 	while (choice == -1)
 	{
@@ -2509,27 +2522,34 @@ void EndGame()
 		SDL_RenderCopy(gRenderer, backdrop, NULL, NULL);
 
 		std::string endGameText = "";
+		SDL_Color endGameColor;
 		//Render text
 		switch (endGameMode)
 		{
 		case endState::WIN:
 			gWhiteTexture.setColor(0, 100, 0, 175);
 			endGameText = "You win!";
+			endGameColor = { 0, 200, 0 };
 			break;
 		case endState::LOSE:
 			gWhiteTexture.setColor(100, 0, 0, 175);
 			endGameText = "You died!";
+			endGameColor = { 255, 0, 0 };
 			break;
 		case endState::TIME_OVER:
 			gWhiteTexture.setColor(100, 0, 0, 175);
 			endGameText = "Time over!";
+			endGameColor = { 255, 0, 0 };
 			break;
 		}
 		//Render overlay 
 		gWhiteTexture.render(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
 
 		//Render text
-		drawText(textX, textY, boldFontTitle, UIColor, endGameText, 1);
+		drawText(textX, textY, boldFontTitle, endGameColor, endGameText, 1);
+
+		//Render tips
+		drawText(tipsX, tipsY, regularFontSmall, UIColor, fullTips, 1);
 
 		//Render buttons
 		for (int i = 0; i < buttons.size(); i++)
@@ -2562,8 +2582,8 @@ void EndGame()
 		break;
 	case 1: //quit to menu
 		hideEndGameScreen();
-		g_StateStack.swap(emptyStack);
-		temp.StatePointer = Menu;
+		showConfirmScreen(confirmState::QUIT_TO_MENU);
+		temp.StatePointer = Confirm;
 		g_StateStack.push(temp);
 		break;
 	case 2: //pressed exit
