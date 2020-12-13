@@ -72,6 +72,12 @@ const int TIME_LIMIT = 450; //total game time in second
 const int TOTAL_OBJECTIVE = 5;
 const int ZOMBIE_NEEDED_TO_KILL = 10; //for objective 4
 
+//pickupables
+//health pickup
+const int MAX_HEALTH_PICKUP_NUM = 15;
+const int HEALTH_PICKUP_HEAL = 25;
+const int HEALTH_PICKUP_SIZE = 75;
+
 //player properties
 const int PLAYER_SIZE = 100;
 const int PLAYER_STATE = 4;

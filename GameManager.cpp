@@ -62,6 +62,7 @@ zombie myZombie;
 gameObject myTree;
 gameObject myHarmZone;
 gameObject myObjectiveZone;
+gameObject myHealthPickup;
 #pragma endregion
 
 #pragma region Textures
@@ -82,6 +83,8 @@ LTexture gBloodOverlayTexture;
 LTexture gHealthIconTexture;
 LTexture gPistolIconTexture;
 LTexture gRifleIconTexture;
+//health pickup texture
+LTexture gHealthPickUpTexture;
 //background texture for menu
 LTexture gMenuTexture;
 //backdrop texture used for pause screen
@@ -183,6 +186,7 @@ std::vector<zombie> zombies;
 std::vector<gameObject> bloodpools;
 std::vector<bullet> bullets;
 std::vector<gameObject> objectiveZones;
+std::vector<gameObject> healthPickUps;
 #pragma endregion
 
 #pragma region Button
@@ -355,6 +359,12 @@ bool loadMedia()
 	if (!gBloodPoolTexture.loadFromFile("Assets/Texture/blood pool.png"))
 	{
 		printf("Failed to load white texture!\n");
+		success = false;
+	}
+
+	if (!gHealthPickUpTexture.loadFromFile("Assets/Texture/health pickup.png"))
+	{
+		printf("Failed to load health pickup texture!\n");
 		success = false;
 	}
 
@@ -833,6 +843,7 @@ void initLevel()
 	bloodpools.clear();
 	bullets.clear();
 	objectiveZones.clear();
+	healthPickUps.clear();
 
 	//reset difficulty
 	DIFFICULTY = 1;
@@ -894,6 +905,9 @@ void initLevel()
 	//create harmzone
 	createGameObjectRandom(myHarmZone, harmZones, MAX_HARM_ZONE_NUM * DIFFICULTY, MIN_HARM_ZONE_SIZE, MAX_HARM_ZONE_SIZE);
 
+	//create health pickups
+	createGameObjectRandom(myHealthPickup, healthPickUps, MAX_HEALTH_PICKUP_NUM, HEALTH_PICKUP_SIZE, HEALTH_PICKUP_SIZE);
+
 	//create objective zones for objective 5 (reach 4 corners + 1 random)
 	myObjectiveZone.init(500, 500, 500, 0);
 	objectiveZones.push_back(myObjectiveZone);
@@ -905,6 +919,7 @@ void initLevel()
 	objectiveZones.push_back(myObjectiveZone);
 	createGameObjectRandom(myObjectiveZone, objectiveZones, 1, 500, 500, 0); //random objective zone
 	printf("random objective location = %f, %f\n", objectiveZones.back().px, objectiveZones.back().py);
+	printf("---inited level---\n");
 }
 
 void checkPreObjective()
@@ -1368,6 +1383,27 @@ void updatePlayer()
 			break;
 		}
 	}
+	//health pickups
+	for (int i = 0; i < healthPickUps.size(); i++)
+	{
+		if (myPlayer.checkCollision(healthPickUps[i]))
+		{
+			if (myPlayer.health < 100)
+			{
+				if (myPlayer.health + HEALTH_PICKUP_HEAL > 100)
+				{
+					myPlayer.health = 100;
+				}
+				else
+				{
+					myPlayer.health += HEALTH_PICKUP_HEAL;
+				}
+				healthPickUps.erase(healthPickUps.begin() + i);
+				myAudio.playCollectObject();
+			}
+			break;
+		}
+	}
 
 	//set player's render position
 	myPlayer.updateRenderPosition();
@@ -1772,7 +1808,7 @@ void handleGameEvent()
 			{
 				if (cheat)
 				{
-					totalZombieKilled+= DIFFICULTY_REQUIREMENT;
+					totalZombieKilled += DIFFICULTY_REQUIREMENT;
 					printf("Cheat: maximum zombies: %i\n", MAX_ZOMBIE_NUM);
 				}
 			}
@@ -1943,6 +1979,9 @@ void Game()
 		//Update and render bullets
 		updateBullet();
 
+		//render health pickups
+		renderGameObject(camera, gHealthPickUpTexture, healthPickUps);
+
 		//Update and render player
 		updatePlayer();
 
@@ -1952,7 +1991,7 @@ void Game()
 		//Render lightings
 		renderLighting();
 
-		//Render game objects
+		//Render other game objects
 		//render trees
 		renderGameObject(camera, gTreeTexture, trees, gTreeClips);
 		//render harm zone
@@ -1997,7 +2036,7 @@ void Game()
 		double theta = myPlayer.rotation * (M_PI / 180);
 		float posX = myPlayer.px + (offsetX * cos(theta) - offsetY * sin(theta));
 		float posY = myPlayer.py + (offsetX * sin(theta) + offsetY * cos(theta));
-		
+
 		//Update screen
 		SDL_RenderPresent(gRenderer);
 	}
@@ -2516,7 +2555,7 @@ void EndGame()
 
 	clearScreen();
 
-		StateStruct temp;
+	StateStruct temp;
 	switch (choice)
 	{
 	case 0: //retry		
@@ -2547,6 +2586,7 @@ void close()
 	gBulletTexture.free();
 	gWhiteTexture.free();
 	gBloodPoolTexture.free();
+	gHealthPickUpTexture.free();
 	gMenuTexture.free();
 
 	//Free loaded screen effect textures
@@ -2588,7 +2628,7 @@ void close()
 	Mix_Quit();
 	IMG_Quit();
 	SDL_Quit();
-	
+
 	g_StateStack.swap(emptyStack);
 }
 
