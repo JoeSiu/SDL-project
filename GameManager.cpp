@@ -1275,6 +1275,11 @@ void drawUI()
 	drawHealth();
 	drawWeapon();
 	drawDialogue();
+
+	if (cheat)
+	{
+		drawText(SCREEN_WIDTH / 2, H_BORDER, boldFontSmall, UIColor, "cheat mode: on", 1);
+	}
 }
 
 void setPlayerAnimation()
@@ -1399,7 +1404,7 @@ void updatePlayer()
 	//health pickups
 	for (int i = 0; i < healthPickUps.size(); i++)
 	{
-		if (myPlayer.checkCollision(healthPickUps[i]))
+		if (myPlayer.checkCollision(healthPickUps[i], HEALTH_PICKUP_SIZE/2))
 		{
 			if (myPlayer.health < 100)
 			{
@@ -2616,6 +2621,15 @@ void close()
 
 	//free backdrop
 	SDL_DestroyTexture(backdrop);
+
+	//clear vectors
+	trees.clear();
+	harmZones.clear();
+	zombies.clear();
+	bloodpools.clear();
+	bullets.clear();
+	signalZones.clear();
+	healthPickUps.clear();
 
 	//Destroy window
 	SDL_DestroyRenderer(gRenderer);
