@@ -70,7 +70,8 @@ const int MAX_BLOOD_POOL_NUM = 50;
 //objectives
 const int TIME_LIMIT = 450; //total game time in second
 const int TOTAL_OBJECTIVE = 5;
-const int ZOMBIE_NEEDED_TO_KILL = 10; //for objective 4
+const int ZOMBIE_NEEDED_TO_KILL = 10;
+const int TOTAL_SIGNAL_ZONE = 3;
 
 //pickupables
 //health pickup

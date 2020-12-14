@@ -61,7 +61,7 @@ player myPlayer;
 zombie myZombie;
 gameObject myTree;
 gameObject myHarmZone;
-gameObject myObjectiveZone;
+gameObject mySignalZone;
 gameObject myHealthPickup;
 #pragma endregion
 
@@ -142,6 +142,7 @@ int timeLeft = TIME_LIMIT;
 //objective goals
 int obj_zombieKilled = 0;
 bool obj_keyPressed[4] = { false, false, false, false }; //whether w, a, s, d have been pressed
+int obj_zones;
 #pragma endregion
 
 #pragma region Dialogues
@@ -185,7 +186,7 @@ std::vector<gameObject> harmZones;
 std::vector<zombie> zombies;
 std::vector<gameObject> bloodpools;
 std::vector<bullet> bullets;
-std::vector<gameObject> objectiveZones;
+std::vector<gameObject> signalZones;
 std::vector<gameObject> healthPickUps;
 #pragma endregion
 
@@ -842,7 +843,7 @@ void initLevel()
 	zombies.clear();
 	bloodpools.clear();
 	bullets.clear();
-	objectiveZones.clear();
+	signalZones.clear();
 	healthPickUps.clear();
 
 	//reset difficulty
@@ -908,17 +909,13 @@ void initLevel()
 	//create health pickups
 	createGameObjectRandom(myHealthPickup, healthPickUps, MAX_HEALTH_PICKUP_NUM, HEALTH_PICKUP_SIZE, HEALTH_PICKUP_SIZE);
 
-	//create objective zones for objective 5 (reach 4 corners + 1 random)
-	myObjectiveZone.init(500, 500, 500, 0);
-	objectiveZones.push_back(myObjectiveZone);
-	myObjectiveZone.init(500, LEVEL_HEIGHT - 500, 500, 0);
-	objectiveZones.push_back(myObjectiveZone);
-	myObjectiveZone.init(LEVEL_WIDTH - 500, 500, 500, 0);
-	objectiveZones.push_back(myObjectiveZone);
-	myObjectiveZone.init(LEVEL_WIDTH - 500, LEVEL_HEIGHT - 500, 500, 0);
-	objectiveZones.push_back(myObjectiveZone);
-	createGameObjectRandom(myObjectiveZone, objectiveZones, 1, 500, 500, 0); //random objective zone
-	printf("random objective location = %f, %f\n", objectiveZones.back().px, objectiveZones.back().py);
+	//create objective zones for objective 5 (find the random signals)
+	createGameObjectRandom(mySignalZone, signalZones, TOTAL_SIGNAL_ZONE, 500, 500, 0); //random objective zone
+	obj_zones = signalZones.size();
+	for (int i = 0; i < signalZones.size(); i++)
+	{
+		printf("signalZones[%i] px = %f, py = %f\n", i, signalZones[i].px, signalZones[i].py);
+	}
 	printf("---inited level---\n");
 }
 
@@ -978,23 +975,39 @@ void checkObjective4()
 {
 	if (currentObjective == 4)
 	{
-		static int zones = objectiveZones.size(); //the zone at 4 corners
-		for (int i = 0; i < objectiveZones.size(); i++)
-		{
-			if (objectiveZones[i].checkCollision(myPlayer))
-			{
-				objectiveZones.erase(objectiveZones.begin() + i);
-				myAudio.playCollectObject();
-				zones--;
-			}
-		}
-		gLightTexture.setColor(0, 0, 255, 200);
-		renderGameObject(camera, gLightTexture, objectiveZones);
 
-		if (zones <= 0)
+		int i = 0;
+		while (i < signalZones.size())
 		{
-			objective[4] = true;
+			if (signalZones[i].checkCollision(myPlayer))
+			{
+				signalZones.erase(signalZones.begin() + i);
+				myAudio.playCollectObject();
+				obj_zones--;
+			}
+			else
+			{
+				int size1 = signalZones[i].size * 10;
+				int size2 = signalZones[i].size * 5;
+				int size3 = signalZones[i].size * 3;
+				gLightTexture.setColor(0, 0, 255, 25);
+				gLightTexture.render(camera, signalZones[i].px - size1/2, signalZones[i].py - size1/2, size1, size1);
+				gLightTexture.setColor(0, 0, 255, 50);
+				gLightTexture.render(camera, signalZones[i].px - size2/2, signalZones[i].py - size2/2, size2, size2);
+				gLightTexture.setColor(0, 0, 255, 100);
+				gLightTexture.render(camera, signalZones[i].px - size3 / 2, signalZones[i].py - size3 / 2, size3, size3);
+				gLightTexture.setColor(0, 0, 255, 200);
+				gLightTexture.render(camera, signalZones[i].rx, signalZones[i].ry, signalZones[i].size, signalZones[i].size);
+			}
+			i++;
 		}
+
+	}
+	//renderGameObject(camera, gLightTexture, signalZones);
+
+	if (obj_zones <= 0)
+	{
+		objective[4] = true;
 	}
 }
 
@@ -1046,7 +1059,7 @@ void updateObjective()
 		}
 		break;
 	case 4: //objective 5: find 5 missing signels
-		objectiveText = "find the missing signel, " + std::to_string(objectiveZones.size()) + "/5 left";
+		objectiveText = "find the missing signel, " + std::to_string(signalZones.size()) + "/" + std::to_string(TOTAL_SIGNAL_ZONE) + " left";
 		break;
 
 	case TOTAL_OBJECTIVE: //objective 5: All objective finished
@@ -2504,7 +2517,7 @@ void EndGame()
 		SDL_RenderCopy(gRenderer, backdrop, NULL, NULL);
 
 		std::string endGameText = "";
-		SDL_Color endGameColor;
+		SDL_Color endGameColor = { 255, 255, 255 };
 		//Render text
 		switch (endGameMode)
 		{

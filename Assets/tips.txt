@@ -11,3 +11,4 @@ The zombie numbers will increase overtime as you progress, so be prepared!
 If your window had lost focus, the game will automatically pause for you :)
 There won't be any zombies during the tutorial, so you can familiarize the controls freely
 Bushes can slow you down! So try not to walk into it
+There are few health pickups in the level which can recover your health. They are so rare though so use it wisely!

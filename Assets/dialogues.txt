@@ -15,11 +15,9 @@ Seems the zombies are heading to your position now!
 Watch out and don't let them get close to you!
 //end part//
 Well we don't have much time left now.
-Your mission is to recover the 5 missing signals.
-4 of them should be at the 4 corners of this area.
-But the last one is unknown, you have to find it yourself.
-They are marked with a blue zone also.
-Good luck!
+Your mission is to recover the missing signals.
+But their position is unknown, you have to find it yourself.
+They should be marked with a blue zone also.
 //end part//
 Great! Seems you have recovered all missing signals.
 We are coming to rescue you.
