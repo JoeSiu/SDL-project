@@ -75,7 +75,7 @@ const int TOTAL_SIGNAL_ZONE = 3;
 
 //pickupables
 //health pickup
-const int MAX_HEALTH_PICKUP_NUM = 15;
+const int MAX_HEALTH_PICKUP_NUM = 10;
 const int HEALTH_PICKUP_HEAL = 25;
 const int HEALTH_PICKUP_SIZE = 75;
 
