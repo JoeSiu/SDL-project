@@ -1,4 +1,4 @@
-#include "GameObject.h"
+#include "Include/GameObject.h"
 
 void gameObject::init(float x, float y, int s, double r, int t) {
 	size = s;

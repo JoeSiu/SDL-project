@@ -1,4 +1,4 @@
-#include "Weapon.h"
+#include "Include/Weapon.h"
 
 bullet::bullet(SDL_Rect& camera, gameObject source, int targetX, int targetY)
 {

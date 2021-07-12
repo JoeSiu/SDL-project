@@ -1,12 +1,12 @@
-#include "Global.h"
-#include "Graphics.h"
-#include "Player.h"
-#include "Zombie.h"
-#include "Weapon.h"
-#include "Timer.h"
-#include "Audio.h"
-#include "PopUpText.h"
-#include "Button.h"
+#include "Include/Global.h"
+#include "Include/Graphics.h"
+#include "Include/Player.h"
+#include "Include/Zombie.h"
+#include "Include/Weapon.h"
+#include "Include/Timer.h"
+#include "Include/Audio.h"
+#include "Include/PopUpText.h"
+#include "Include/Button.h"
 
 #pragma region Create_Variables
 #pragma region Rendering
