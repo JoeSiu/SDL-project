@@ -1,14 +1,41 @@
 # Dark Zone
-Dark Zone is a 2d top down zombie survival game made in SDL 2.0 and C++
+Dark Zone is a 2d top down zombie survival game made in SDL 2.0 and C++.
 
-
-## Youtube demo:
 [![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/DmhYlhZxvpQ/0.jpg)](https://youtu.be/DmhYlhZxvpQ)
 
-## Install:
+### Controls
+
+| Keys              | Actions         |
+|-------------------|-----------------|
+| W                 | Move up         |
+| A                 | Move left       |
+| S                 | Move down       |
+| D                 | Move right      |
+| Left mouse button | Shoot           |
+| Mouse wheel / Q   | Cycle weapon    |
+| 1                 | Weapon 1        |
+| 2                 | Weapon 2        |
+| Esc               | Pause / resume  |
+
+There is also a cheat mode used for debugging
+
+| Keys   | Actions                   |
+|--------|---------------------------|
+| `      | Toggle cheat mode         |
+| Space  | Restore player health     |
+| Shift  | Double the movement speed |
+| Insert | Force spawn zombies       |
+| Delete | Kill all zombies          |
+| Home   | Toggle god mode           |
+| End    | Instant death             |
+
+## Install
 Download the [zip file](https://github.com/JoeSiu/SM2603-Final-Project/releases/latest) and unzip, then run the executable file.
 
-## Sources:
+## Compile
+[SDL2-2.0.12](https://www.libsdl.org/download-2.0.php) or above is required
+
+## Sources used
 - https://opengameart.org/content/animated-top-down-survivor-player
 - https://opengameart.org/content/animated-top-down-zombie
 - https://www.fesliyanstudios.com/royalty-free-sound-effects-download/zombie-174
