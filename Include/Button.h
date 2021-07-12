@@ -8,7 +8,7 @@ enum class buttonState
 	DEFAULT, HOVERED, PRESSED
 };
 
-class button: public gameObject
+class button : public gameObject
 {
 public:
 	std::string text;

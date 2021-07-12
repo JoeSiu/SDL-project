@@ -26,7 +26,6 @@ public:
 	int getDamage();
 	float getRateOfFire();
 	int getClipSize();
-	
 
 	void init(std::string n, float d, float r, int a, int c, float t); //name, damage, rate of fire, ammo, clip size, reload time
 	std::string getName();
@@ -38,7 +37,6 @@ public:
 	bool fire();
 	void reload();
 	void resetTimer();
-
 
 private:
 	std::string name;

@@ -7,7 +7,7 @@ enum class playerState
 	IDLE, WALK, FIRE, RELOAD, DEAD
 };
 
-class player : public  gameObject 
+class player : public  gameObject
 {
 public:
 	//player stat
@@ -15,7 +15,7 @@ public:
 	int speed;
 	int vx;
 	int vy;
-	
+
 	playerState currentState;
 	playerState previousState;
 

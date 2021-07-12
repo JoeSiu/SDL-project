@@ -74,7 +74,7 @@ void zombie::move(gameObject target)
 	dirY = -sin(rotation * M_PI / 180.0);
 	vx = dirX * speed * deltaTimer.getDeltaTime();
 	vy = dirY * speed * deltaTimer.getDeltaTime();
-	
+
 	px += vx;
 	py += vy;
 
@@ -121,5 +121,5 @@ void zombie::render(SDL_Rect& camera)
 		currentTexture->setColor(100, 100, 255);
 		break;
 	}
-	currentTexture -> render(rx - camera.x, ry - camera.y, size, size, currentClip, 180 + rotation);
+	currentTexture->render(rx - camera.x, ry - camera.y, size, size, currentClip, 180 + rotation);
 }

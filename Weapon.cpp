@@ -15,7 +15,7 @@ bullet::bullet(SDL_Rect& camera, gameObject source, int targetX, int targetY)
 	setRenderPosition(px, py);
 	speed = BULLET_SPEED * deltaTimer.getDeltaTime();
 
-	rotation = source.rotation; 
+	rotation = source.rotation;
 
 	float screenX = calOnScreenXPosition(camera, px);
 	float screenY = calOnScreenYPosition(camera, py);
@@ -100,10 +100,10 @@ bool weapon::checkAmmo()
 	{
 		if (!reloadFlag)
 		{
-		return true;
+			return true;
 		}
 	}
-		return false;
+	return false;
 }
 
 bool weapon::checkReload()
@@ -115,7 +115,7 @@ bool weapon::checkReload()
 			reloadTimer = 0;
 			reloadFlag = false;
 			ammo = clipSize;
-		} 
+		}
 		else
 		{
 			reloadTimer -= deltaTimer.getDeltaTime();

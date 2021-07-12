@@ -2,7 +2,7 @@
 #include "Include/Global.h"
 #include "Include/Graphics.h"
 
-class gameObject 
+class gameObject
 {
 public:
 	int size;

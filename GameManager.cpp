@@ -991,9 +991,9 @@ void checkObjective4()
 				int size2 = signalZones[i].size * 5;
 				int size3 = signalZones[i].size * 3;
 				gLightTexture.setColor(0, 0, 255, 25);
-				gLightTexture.render(camera, signalZones[i].px - size1/2, signalZones[i].py - size1/2, size1, size1);
+				gLightTexture.render(camera, signalZones[i].px - size1 / 2, signalZones[i].py - size1 / 2, size1, size1);
 				gLightTexture.setColor(0, 0, 255, 50);
-				gLightTexture.render(camera, signalZones[i].px - size2/2, signalZones[i].py - size2/2, size2, size2);
+				gLightTexture.render(camera, signalZones[i].px - size2 / 2, signalZones[i].py - size2 / 2, size2, size2);
 				gLightTexture.setColor(0, 0, 255, 100);
 				gLightTexture.render(camera, signalZones[i].px - size3 / 2, signalZones[i].py - size3 / 2, size3, size3);
 				gLightTexture.setColor(0, 0, 255, 200);
@@ -1404,7 +1404,7 @@ void updatePlayer()
 	//health pickups
 	for (int i = 0; i < healthPickUps.size(); i++)
 	{
-		if (myPlayer.checkCollision(healthPickUps[i], HEALTH_PICKUP_SIZE/2))
+		if (myPlayer.checkCollision(healthPickUps[i], HEALTH_PICKUP_SIZE / 2))
 		{
 			if (myPlayer.health < 100)
 			{

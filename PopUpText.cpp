@@ -28,7 +28,7 @@ bool popUpText::check()
 {
 	systemTimer.calDeltaTime();
 	tick();
-	
+
 	if (!show && systemTimer.getCurrentTime() - startTime > interval)
 	{
 		showText();
