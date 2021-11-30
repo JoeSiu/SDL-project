@@ -29,6 +29,8 @@ There is also a cheat mode used for debugging
 | Home   | Toggle god mode           |
 | End    | Instant death             |
 
+[View the full manual and implementation details here](https://github.com/JoeSiu/SDL-project/blob/master/Game%20manual%20%26%20implementation.pdf)
+
 ## Install
 Download the [zip file](https://github.com/JoeSiu/SM2603-Final-Project/releases/latest) and unzip, then run the executable file.
 
